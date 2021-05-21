@@ -306,6 +306,8 @@ public:
 	Vector3 TopRight() const;
 	Vector3& operator[](int i);
 	Vector3 operator[](int i) const;
+
+	void Poisson(std::vector<Vector3>& samples, double r, int n) const;
 };
 
 /*
@@ -534,6 +536,33 @@ inline Vector3 Box::operator[](int i) const
 	if (i == 0)
 		return a;
 	return b;
+}
+
+/*!
+\brief Compute a Poisson sphere distribution inside a box.
+This function uses a simple O(n<SUP>3</SUP>) dart throwing algorithm.
+\param array of existing samples (possibly empty)
+\param r Radius of the sphere.
+\param n Number of candidate points.
+*/
+void Box::Poisson(std::vector<Vector3>& p, double r, int n) const
+{
+	double c = 4.0 * r * r;
+	for (int i = 0; i < n; i++)
+	{
+		Vector3 t = RandomInside();
+		bool hit = false;
+		for (int j = 0; j < p.size(); j++)
+		{
+			if (SquaredMagnitude(t - p.at(j)) < c)
+			{
+				hit = true;
+				break;
+			}
+		}
+		if (hit == false)
+			p.push_back(t);
+	}
 }
 
 

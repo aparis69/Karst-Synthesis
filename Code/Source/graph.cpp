@@ -61,11 +61,15 @@ void CostGraph::DijkstraComputePaths(int source, std::vector<double>& distance, 
 /*
 \brief
 */
-std::vector<int> CostGraph::DijkstraGetShortestPathTo(int target, const std::vector<int>& previous) const
+std::vector<int> CostGraph::DijkstraGetShortestPathTo(int target, const std::vector<int>& previous, const std::vector<double>& distances, double& dist) const
 {
     std::vector<int> path;
     int n = target;
+    dist = 0.0;
     for (; n != -1; n = previous[n])
+    {
+        dist += distances[n];
         path.insert(path.begin(), n);
+    }
     return path;
 }
