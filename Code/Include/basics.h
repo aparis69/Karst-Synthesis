@@ -545,7 +545,7 @@ This function uses a simple O(n<SUP>3</SUP>) dart throwing algorithm.
 \param r Radius of the sphere.
 \param n Number of candidate points.
 */
-void Box::Poisson(std::vector<Vector3>& p, double r, int n) const
+inline void Box::Poisson(std::vector<Vector3>& p, double r, int n) const
 {
 	double c = 4.0 * r * r;
 	for (int i = 0; i < n; i++)

@@ -36,6 +36,7 @@ void CostGraph::DijkstraComputePaths(int source, std::vector<double>& distance, 
     vertex_queue.insert(std::make_pair(distance[source], source));
     while (!vertex_queue.empty())
     {
+        double dist = vertex_queue.begin()->first;
         int u = vertex_queue.begin()->second;
         vertex_queue.erase(vertex_queue.begin());
 
@@ -45,7 +46,7 @@ void CostGraph::DijkstraComputePaths(int source, std::vector<double>& distance, 
         {
             int v = neighbor_iter->target;
             double weight = neighbor_iter->weight;
-            double distance_through_u = /*dist +*/ weight;
+            double distance_through_u = dist + weight;
             if (distance_through_u < distance[v])
             {
                 vertex_queue.erase(std::make_pair(distance[v], v));

@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="..\Code\Source\graph.cpp" />
     <ClCompile Include="..\Code\Source\main.cpp" />
+    <ClCompile Include="..\Code\Source\skeleton.cpp" />
     <ClCompile Include="..\Code\Source\volumetricgraph.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -12,9 +12,6 @@ struct Vector4;
 // Maths utility
 namespace Math
 {
-	/*!
-	\brief
-	*/
 	inline double Clamp(double x, double a = 0.0f, double b = 1.0f)
 	{
 		return x < a ? a : x > b ? b : x;
@@ -121,6 +118,22 @@ namespace Math
 	inline double QuinticSmooth(double t)
 	{
 		return pow(t, 3.0f) * (t * (t * 6.0f - 15.0f) + 10.0f);
+	}
+
+	inline double Pow(double x, double e)
+	{
+		if (x == 0.0)
+		{
+			return 0.0;
+		}
+		else if (x > 0.0)
+		{
+			return pow(x, e);
+		}
+		else
+		{
+			return -pow(-x, e);
+		}
 	}
 }
 
