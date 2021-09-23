@@ -6,15 +6,100 @@
 */
 VolumetricGraph::VolumetricGraph() : CostGraph(0)
 {
+	distanceCost = CostTerm(true, 1.0);
 }
 
 /*
 \brief Compute the cost at a given point, in a given direction.
 */
-double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& d) const
+double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) const
 {
-	return 0.0;
+	Vector3 d = Normalize(pn - p);
+
+	// Distance cost
+	double cost = 0.0;
+	if (distanceCost.used)
+		cost += Magnitude(p - pn) * distanceCost.weight;
+
+	// Horizon cost
+	if (horizonCost.used)
+	{
+		double nearestDist = 1e6;
+		for (int i = 0; i < params.horizons.size(); i++)
+		{
+			double d = Math::Abs((p[2] - params.horizons[i])) + Math::Abs((pn[2] - params.horizons[i]));
+			if (d < nearestDist)
+				nearestDist = d;
+		}
+
+		// TODO(axel): falloff with radius
+		cost += nearestDist * horizonCost.weight;
+	}
+
+	// Permeability
+	if (permeabilityCost.used)
+	{
+		double costPerm = 0.0;
+		for (int i = 0; i < params.permeability.size(); i++)
+			costPerm += params.permeability[i].Intensity(p);
+		cost += costPerm * permeabilityCost.weight;
+	}
+
+	// Inside/outside
+	{
+		// TODO(Axel)
+	}
+
+	// Orientation
+	{
+		// TODO(Axel)
+	}
+
+	return cost;
 }
+
+/*
+\brief Computes the internal index of a sample of the graph, or -1 if the sample does not exist.
+\param p sample position
+*/
+int VolumetricGraph::NodeIndex(const Vector3& p) const
+{
+	for (int i = 0; i < samples.size(); i++)
+	{
+		if (samples[i] == p)
+			return i;
+	}
+	return -1;
+}
+
+/*!
+\brief Performs an adaptive sampling of the space based on provided geological features.
+Inception horizons are first sampled (as they are most important), then permeability volumes.
+Rest of space is then filled with a Poisson sphere distribution.
+*/
+void VolumetricGraph::SampleSpace()
+{
+	// Horizon sampling
+	for (int i = 0; i < params.horizons.size(); i++)
+	{
+		// TODO(Axel)
+	}
+
+	// Permeability sampling
+	for (int i = 0; i < params.permeability.size(); i++)
+	{
+		// TODO(Axel)
+	}
+
+	// Poisson sampling 
+	double zMin = params.heightfield.Min();
+	double zMax = params.heightfield.Max();
+	Box box = params.heightfield.GetBox().ToBox(zMin - 100.0, zMax + 50.0);
+	box.Poisson(samples, params.poissonRadius, 500000);
+
+	std::cout << "Sample count: " << samples.size() << std::endl;
+}
+
 
 /*
 \brief Initialize the volumetric cost graph from a set of key points.
@@ -22,19 +107,16 @@ In our system, the graph of the domain is a nearest neighbour graph constructed 
 \param keyPts the key points
 \param hf the terrain
 */
-void VolumetricGraph::ComputeCostGraph(const std::vector<KeyPoint>& keyPts, const ScalarField2D& hf)
+void VolumetricGraph::ComputeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& geologicalParams)
 {
+	params = geologicalParams;
+
 	// Key points are added as samples
 	for (int i = 0; i < keyPts.size(); i++)
 		samples.push_back(keyPts[i].p);
 
-	//
-	// TODO(Axel): sampling of the geological features, if any.
-	//
-
-	Box box = hf.GetBox().ToBox(hf.Min() - 100.0, hf.Max() + 50.0);
-	box.Poisson(samples, 10.0, 500000);
-	std::cout << "Sample count: " << samples.size() << std::endl;
+	// Adaptive sampling of space
+	SampleSpace();	
 
 	// Build nearest neighbor graph
 	struct Neighbour
@@ -67,28 +149,9 @@ void VolumetricGraph::ComputeCostGraph(const std::vector<KeyPoint>& keyPts, cons
 		for (int j = 0; j < n; j++)
 		{
 			Vector3 pn = samples[candidates[j].i];
-			Vector3 d = Normalize(pn - p);
-
-			double cost = ComputeEdgeCost(p, d);	// Geological cost
-			cost += Magnitude(p - pn);				// Euclidean distance
-
-			SetEdge(i, candidates[j].i, cost);
+			SetEdge(i, candidates[j].i, ComputeEdgeCost(p, pn));
 		}
 	}
-}
-
-/*
-\brief Computes the internal index of a sample of the graph, or -1 if the sample does not exist.
-\param p sample position
-*/
-int VolumetricGraph::NodeIndex(const Vector3& p) const
-{
-	for (int i = 0; i < samples.size(); i++)
-	{
-		if (samples[i] == p)
-			return i;
-	}
-	return -1;
 }
 
 /*

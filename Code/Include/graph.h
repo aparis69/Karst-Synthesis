@@ -1,6 +1,7 @@
 #pragma once
 
 #include "basics.h"
+#include "geology.h"
 
 enum class KeyPointType
 {
@@ -110,7 +111,7 @@ public:
 	bool used;
 	double weight;
 public:
-	inline explicit CostTerm() { }
+	inline explicit CostTerm() : used(false), weight(1.0) { }
 	inline explicit CostTerm(bool u, double w) : used(u), weight(w) { }
 };
 
@@ -127,6 +128,8 @@ protected:
 
 protected:
 	std::vector<Vector3> samples;	//!< Graph nodes.
+	GeologicalParameters params;	//!< All geological parameters.
+
 	CostTerm distanceCost;
 	CostTerm fractureCost;
 	CostTerm horizonCost;
@@ -137,7 +140,7 @@ public:
 	explicit VolumetricGraph();
 
 	double ComputeEdgeCost(const Vector3& p, const Vector3& pn) const;
-	void ComputeCostGraph(const std::vector<KeyPoint>& keyPts, const ScalarField2D& hf);
+	void ComputeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& params);
 	KarsticSkeleton ComputeKarsticSkeleton(const std::vector<KeyPoint>& keyPts) const;
 	std::vector<InternalKeyPoint> AddNewSamples(const std::vector<KeyPoint>& samples);
 
@@ -147,4 +150,7 @@ public:
 	inline void SetPermeabilityCost(const CostTerm& t) { horizonCost = t; }
 	inline void SetGamma(double g) { gamma = g; }
 	inline Vector3 GetSample(int i) const { return samples[i]; }
+
+protected:
+	void SampleSpace();
 };

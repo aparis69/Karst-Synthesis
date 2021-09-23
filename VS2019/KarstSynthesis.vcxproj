@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Code\Include\basics.h" />
+    <ClInclude Include="..\Code\Include\geology.h" />
     <ClInclude Include="..\Code\Include\graph.h" />
     <ClInclude Include="..\Code\Include\vec.h" />
   </ItemGroup>
