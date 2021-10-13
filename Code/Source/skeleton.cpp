@@ -9,42 +9,7 @@
 */
 KarsticSkeleton::KarsticSkeleton(const VolumetricGraph* graph, const std::vector<std::vector<int>>& paths)
 {
-	for (int i = 0; i < paths.size(); i++)	// Nodes
-	{
-		for (int j = 0; j < paths[i].size(); j++)
-		{
-			int nodeIndex = paths[i][j];
-			auto it = std::find(nodes.begin(), nodes.end(), nodeIndex);
-			if (it == nodes.end())
-			{
-				Vector3 p = graph->GetSample(nodeIndex);
-				nodes.push_back({ nodeIndex, p });
-			}
-		}
-	}
-	for (int i = 0; i < nodes.size(); i++)		// Edges
-	{
-		int nodeIndex = nodes[i].index;
-		std::vector<int> edges;
-		for (int j = 0; j < paths.size(); j++)
-		{
-			for (int k = 0; k < paths[j].size(); k++)
-			{
-				int n = paths[j][k];
-				if (nodeIndex != n)
-					continue;
-				if (k < paths[j].size() - 1)
-				{
-					int nAfter = paths[j][k + 1];
-					int neiIndex = GetInternalIndex(nAfter);
-					if (std::find(edges.begin(), edges.end(), neiIndex) == edges.end())
-						edges.push_back(neiIndex);
-				}
-			}
-		}
-		for (int j = 0; j < edges.size(); j++)
-			nodes[i].connections.push_back({ edges[j], TunnelType::Tube, 0.0 });
-	}
+	AppendPaths(graph, paths);
 }
 
 /*!
@@ -52,31 +17,20 @@ KarsticSkeleton::KarsticSkeleton(const VolumetricGraph* graph, const std::vector
 Calling this method with an empty parameter will procedurally place ten key points in the scene, and amplify the skeleton in the same way.
 \param keyPts new key points.
 */
-void KarsticSkeleton::Amplify(VolumetricGraph* graph, std::vector<KeyPoint>& keyPts)
+void KarsticSkeleton::Amplify(VolumetricGraph* graph, const std::vector<KeyPoint>& baseKeyPts, std::vector<KeyPoint>& newKeyPts)
 {
 	// if keyPts is empty, generate some procedurally
-	if (keyPts.empty())
-		keyPts = GenerateKeyPoints();
+	if (newKeyPts.empty())
+		newKeyPts = GenerateKeyPoints();
 
 	// First, we must add the new key points to the graph and compute their neighbours
-	graph->AddNewSamples(keyPts);
-}
+	graph->AddNewSamples(newKeyPts);
 
-/*!
-\brief Subdivide the skeleton using a midpoint displacement algorithm parameterized by a tortuosity factor.
-\param tortuosity
-*/
-void KarsticSkeleton::Subdivide(double tortuosity)
-{
+	// Then, we link the new samples to the existing network
+	auto newPaths = graph->AmplifyKarsticSkeleton(baseKeyPts, newKeyPts);
 
-}
-
-/*!
-\brief Computes all tunnel section types and radius based on geomorphological and geometrical parameters.
-*/
-void KarsticSkeleton::ComputeParameters()
-{
-
+	// Update the internal karstic skeleton struture
+	AppendPaths(graph, newPaths);
 }
 
 /*
@@ -123,6 +77,53 @@ int KarsticSkeleton::GetInternalIndex(int nodeIndex) const
 			return i;
 	}
 	return -1;
+}
+
+/*!
+\brief
+*/
+void KarsticSkeleton::AppendPaths(const VolumetricGraph* graph, const std::vector<std::vector<int>>& paths)
+{
+	for (int i = 0; i < paths.size(); i++)	// Nodes
+	{
+		for (int j = 0; j < paths[i].size(); j++)
+		{
+			int nodeIndex = paths[i][j];
+			auto it = std::find(nodes.begin(), nodes.end(), nodeIndex);
+			if (it == nodes.end())
+			{
+				Vector3 p = graph->GetSample(nodeIndex);
+				nodes.push_back({ nodeIndex, p });
+			}
+		}
+	}
+	for (int i = 0; i < nodes.size(); i++)		// Edges
+	{
+		int nodeIndex = nodes[i].index;
+		std::vector<int> edges;
+		for (int j = 0; j < paths.size(); j++)
+		{
+			for (int k = 0; k < paths[j].size(); k++)
+			{
+				int n = paths[j][k];
+				if (nodeIndex != n)
+					continue;
+				if (k < paths[j].size() - 1)
+				{
+					int nAfter = paths[j][k + 1];
+					int neiIndex = GetInternalIndex(nAfter);
+					if (std::find(edges.begin(), edges.end(), neiIndex) == edges.end())
+						edges.push_back(neiIndex);
+				}
+			}
+		}
+		for (int j = 0; j < edges.size(); j++)
+		{
+			auto newSection = KarsticSection({ edges[j], TunnelType::Tube, 0.0 });
+			if (std::find(nodes[i].connections.begin(), nodes[i].connections.end(), edges[j]) == nodes[i].connections.end())
+				nodes[i].connections.push_back(newSection);
+		}
+	}
 }
 
 /*!

@@ -121,7 +121,7 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 		}
 	};
 	adj.resize(samples.size());
-	double R = 200.0 * 200.0;
+	double R = 100.0 * 100.0;
 	int N = 32;
 	for (int i = 0; i < samples.size(); i++)
 	{
@@ -219,10 +219,7 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 			double pathSize;
 			std::vector<int> path = DijkstraGetShortestPathTo(t, previous, distances, pathSize);
 			if (path.size() <= 1)
-			{
-				std::cout << "This should not happen" << std::endl;
 				continue;
-			}
 
 			all_paths[i][j] = path;
 			all_distances[i][j] = pathSize;
@@ -285,6 +282,46 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 }
 
 /*!
+\brief Amplify the graph from a new set of key points. The new points are linked to the existing base key points.
+\param baseKeyPts
+\param newKeyPts
+*/
+std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std::vector<KeyPoint>& baseKeyPts, const std::vector<KeyPoint>& newKeyPts)
+{
+	// Our goal is to connect the new key points to the original network key points
+	std::vector<std::vector<int>> pathsFinal;
+	for (int i = 0; i < newKeyPts.size(); i++)
+	{
+		int startIndex = NodeIndex(newKeyPts[i].p);
+		std::vector<double> distances;
+		std::vector<int> previous;
+
+		DijkstraComputePaths(startIndex, distances, previous);
+		
+		double minDist = 1e6;
+		std::vector<int> bestPath;
+		for (int j = 0; j < baseKeyPts.size(); j++)
+		{
+			if (i == j)
+				continue;
+			int endIndex = NodeIndex(baseKeyPts[j].p);
+			double totalDistance = 0.0;
+			std::vector<int> path = DijkstraGetShortestPathTo(endIndex, previous, distances, totalDistance);
+			if (path.size() <= 1)
+				continue;
+			if (totalDistance < minDist)
+			{
+				minDist = totalDistance;
+				bestPath = path;
+			}
+		}
+		pathsFinal.push_back(std::vector<int>(bestPath.begin(), bestPath.end()));
+	}
+	std::cout << "Additional path count: " << pathsFinal.size() << std::endl;
+	return pathsFinal;
+}
+
+/*!
 \brief Add new samples to the nearest neighbour graph structure. 
 Existing samples are not removed, but their neighbours are modified.
 \param samples new sample passed as key points
@@ -300,7 +337,7 @@ std::vector<VolumetricGraph::InternalKeyPoint> VolumetricGraph::AddNewSamples(co
 			return d < nei.d;
 		}
 	};
-	double R = 50.0 * 50.0;
+	double R = 100.0 * 100.0;
 	int N = 32;
 	std::vector<InternalKeyPoint> ret;
 	for (int i = 0; i < newSamples.size(); i++)
@@ -327,10 +364,10 @@ std::vector<VolumetricGraph::InternalKeyPoint> VolumetricGraph::AddNewSamples(co
 			Vector3 pn = samples[candidates[j].i];
 			Vector3 d = Normalize(pn - p);
 
-			// Forward cost (from key point to sample)
+			// Forward cost (from new key point to existing sample)
 			SetEdge(index, candidates[j].i, ComputeEdgeCost(p, d));
 
-			// Compute the reverse cost as well (from sample to key point)
+			// Compute the reverse cost as well (from existing sample to new key point)
 			SetEdge(candidates[j].i, index, ComputeEdgeCost(pn, -d));
 		}
 

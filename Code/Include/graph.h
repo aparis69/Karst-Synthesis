@@ -43,6 +43,11 @@ public:
 	int destIndex;
 	TunnelType type;
 	double radius;
+
+	inline bool operator==(int i) const
+	{
+		return (destIndex == i);
+	}
 };
 
 class KarsticNode
@@ -68,15 +73,14 @@ public:
 	inline explicit KarsticSkeleton() { }
 	KarsticSkeleton(const VolumetricGraph* graph, const std::vector<std::vector<int>>& paths);
 
-	void Amplify(VolumetricGraph* graph, std::vector<KeyPoint>& keyPts);
-	void Subdivide(double tortuosity);
-	void ComputeParameters();
+	void Amplify(VolumetricGraph* graph, const std::vector<KeyPoint>& baseKeyPts, std::vector<KeyPoint>& keyPts);
 	Box GetBox() const;
 	void Save(const std::string& file) const;
 
 private:
 	int GetInternalIndex(int index) const;
 	std::vector<KeyPoint> GenerateKeyPoints() const;
+	void AppendPaths(const VolumetricGraph* graph, const std::vector<std::vector<int>>& paths);
 };
 
 
@@ -142,6 +146,7 @@ public:
 	double ComputeEdgeCost(const Vector3& p, const Vector3& pn) const;
 	void InitializeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& params);
 	KarsticSkeleton ComputeKarsticSkeleton(const std::vector<KeyPoint>& keyPts) const;
+	std::vector<std::vector<int>> AmplifyKarsticSkeleton(const std::vector<KeyPoint>& baseKeyPts, const std::vector<KeyPoint>& newKeyPts);
 	std::vector<InternalKeyPoint> AddNewSamples(const std::vector<KeyPoint>& samples);
 
 	inline void SetDistanceCost(const CostTerm& t) { distanceCost = t; }

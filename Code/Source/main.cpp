@@ -9,43 +9,51 @@ int main()
 {
 	srand(1234);
 
-	// Initial heightfield and key points
+	// Initial heightfield
 	GeologicalParameters params;
 	params.heightfield = ScalarField2D(256, 256, Box2D(Vector2(0), 500), 0.0);
 	params.elevationOffsetMin = 200;
 	params.elevationOffsetMax = 50;
 	
-	std::vector<KeyPoint> keyPoints;
+	// Key points
+	std::vector<KeyPoint> baseKeyPoints;
 	for (int i = 0; i < 4; i++)
 	{
 		Vector2 p = params.heightfield.GetBox().RandomInside();
 		double y = params.heightfield.GetValueBilinear(p);
-		keyPoints.push_back(KeyPoint(Vector3(p.x, y, p.y), KeyPointType::Sink));
+		baseKeyPoints.push_back(KeyPoint(Vector3(p.x, y, p.y), KeyPointType::Sink));
 	}
 	for (int i = 0; i < 4; i++)
 	{
 		Vector2 p = params.heightfield.GetBox().RandomInside();
 		double y = params.heightfield.GetValueBilinear(p) - Random::Uniform(-30, -200);
-		keyPoints.push_back(KeyPoint(Vector3(p.x, y, p.y), KeyPointType::Spring));
+		baseKeyPoints.push_back(KeyPoint(Vector3(p.x, y, p.y), KeyPointType::Spring));
 	}
 	for (int i = 0; i < 4; i++)
 	{
 		Vector2 p = params.heightfield.GetBox().RandomInside();
 		double y = params.heightfield.GetValueBilinear(p) - Random::Uniform(-30, -100);
-		keyPoints.push_back(KeyPoint(Vector3(p.x, y, p.y), KeyPointType::Waypoint));
+		baseKeyPoints.push_back(KeyPoint(Vector3(p.x, y, p.y), KeyPointType::Waypoint));
 	}
 
 	// Geological parameters of the scene: horizons, permeability, fractures
 	params.poissonRadius = 10.0;
 	params.horizons.push_back(-75.0);
 
-	// Compute karstic skeleton
+	// Compute 3D cost graph
 	VolumetricGraph graph;
-	graph.InitializeCostGraph(keyPoints, params);
+	graph.InitializeCostGraph(baseKeyPoints, params);
 	//graph.SaveSamples("samples.ply");
 
-	KarsticSkeleton skel = graph.ComputeKarsticSkeleton(keyPoints);
+	// Compute karstic skeleton
+	KarsticSkeleton skel = graph.ComputeKarsticSkeleton(baseKeyPoints);
+
+	// Procedural amplification
+	std::vector<KeyPoint> newKeyPts;
+	skel.Amplify(&graph, baseKeyPoints, newKeyPts);
+
 	skel.Save("test");
 
+	std::cin.get();
 	return 0;
 }
