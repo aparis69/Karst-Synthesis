@@ -582,6 +582,8 @@ public:
 	bool Contains(const Vector2&) const;
 	bool Intersect(const Box2D& box) const;
 	double Distance(const Vector2& p) const;
+	void Poisson(std::vector<Vector2>& p, double r, int n) const;
+	Vector2 RandomInside() const;
 
 	Vector2 Vertex(int i) const;
 	Vector2 Center() const;
@@ -740,6 +742,50 @@ inline Vector2 Box2D::operator[](int i) const
 	return b;
 }
 
+/*!
+\brief Compute a random point inside a box. Note that this
+is not a uniform sampling if the box is not a regular box (width = height = length).
+
+In practice, a uniform sampling doesn't give different results and is way slower, so
+we avoid this.
+
+\return a random point inside the box.
+*/
+inline Vector2 Box2D::RandomInside() const
+{
+	Vector2 s = b - a;
+	double randw = Random::Uniform(-1.0f * s[0] / 2.0f, s[0] / 2.0f);
+	double randh = Random::Uniform(-1.0f * s[1] / 2.0f, s[1] / 2.0f);
+	return (a + b) / 2.0f + Vector2(randw, randh);
+}
+
+/*!
+\brief Compute a Poisson sphere distribution inside a box.
+This function uses a simple O(n<SUP>3</SUP>) dart throwing algorithm.
+\param array of existing samples (possibly empty)
+\param r Radius of the sphere.
+\param n Number of candidate points.
+*/
+inline void Box2D::Poisson(std::vector<Vector2>& p, double r, int n) const
+{
+	double c = 4.0 * r * r;
+	for (int i = 0; i < n; i++)
+	{
+		Vector2 t = RandomInside();
+		bool hit = false;
+		for (int j = 0; j < p.size(); j++)
+		{
+			if (SquaredMagnitude(t - p.at(j)) < c)
+			{
+				hit = true;
+				break;
+			}
+		}
+		if (hit == false)
+			p.push_back(t);
+	}
+}
+
 
 // Circle2. A 2D Circle geometric element.
 class Circle2
@@ -894,6 +940,7 @@ public:
 	Vector3 RandomSurface() const;
 	Vector3 Center() const;
 	double Radius() const;
+	void Poisson(std::vector<Vector3>& p, double r, int n) const;
 };
 
 /*!
@@ -962,6 +1009,33 @@ inline Vector3 Sphere::Center() const
 inline double Sphere::Radius() const
 {
 	return radius;
+}
+
+/*!
+\brief Compute a Poisson sphere distribution inside a box.
+This function uses a simple O(n<SUP>3</SUP>) dart throwing algorithm.
+\param array of existing samples (possibly empty)
+\param r Radius of the sphere.
+\param n Number of candidate points.
+*/
+inline void Sphere::Poisson(std::vector<Vector3>& p, double r, int n) const
+{
+	double c = 4.0 * r * r;
+	for (int i = 0; i < n; i++)
+	{
+		Vector3 t = RandomInside();
+		bool hit = false;
+		for (int j = 0; j < p.size(); j++)
+		{
+			if (SquaredMagnitude(t - p.at(j)) < c)
+			{
+				hit = true;
+				break;
+			}
+		}
+		if (hit == false)
+			p.push_back(t);
+	}
 }
 
 

@@ -2,17 +2,19 @@
 
 #include "basics.h"
 
-class PermeabilitySphere
+class PermeabilitySphere : public Sphere
 {
 public:
-	Vector3 c;
-	double r;
 	double e;
 
 public:
-	double Intensity(const Vector3& p) const
+	inline PermeabilitySphere(const Vector3& c, double r, double e) : Sphere(c, r), e(e)
+	{		
+	}
+
+	inline double Intensity(const Vector3& p) const
 	{
-		return e * Math::CubicSmoothCompact(SquaredMagnitude(p - c), r * r);
+		return e * Math::CubicSmoothCompact(SquaredMagnitude(p - center), radius * radius);
 	}
 };
 
@@ -22,6 +24,9 @@ public:
 	double poissonRadius;
 
 	std::vector<double> horizons;
-	std::vector<PermeabilitySphere> permeability;
+	std::vector<PermeabilitySphere> permeabilityVols;
+	
 	ScalarField2D heightfield;
+	double elevationOffsetMin;
+	double elevationOffsetMax;
 };

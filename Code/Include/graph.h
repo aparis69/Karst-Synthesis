@@ -140,7 +140,7 @@ public:
 	explicit VolumetricGraph();
 
 	double ComputeEdgeCost(const Vector3& p, const Vector3& pn) const;
-	void ComputeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& params);
+	void InitializeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& params);
 	KarsticSkeleton ComputeKarsticSkeleton(const std::vector<KeyPoint>& keyPts) const;
 	std::vector<InternalKeyPoint> AddNewSamples(const std::vector<KeyPoint>& samples);
 
@@ -151,6 +151,9 @@ public:
 	inline void SetGamma(double g) { gamma = g; }
 	inline Vector3 GetSample(int i) const { return samples[i]; }
 
+	void SaveSamples(const std::string& path) const;
+
 protected:
 	void SampleSpace();
+	void BuildNearestNeighbourGraph();
 };

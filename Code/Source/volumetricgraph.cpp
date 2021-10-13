@@ -1,5 +1,6 @@
 #include "graph.h"
 #include <algorithm> // for std::sort
+#include <fstream>	 // for saving sample file
 
 /*
 \brief Default Constructor.
@@ -27,7 +28,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 		double nearestDist = 1e6;
 		for (int i = 0; i < params.horizons.size(); i++)
 		{
-			double d = Math::Abs((p[2] - params.horizons[i])) + Math::Abs((pn[2] - params.horizons[i]));
+			double d = Math::Abs((p[2] - params.horizons[i]));
 			if (d < nearestDist)
 				nearestDist = d;
 		}
@@ -40,14 +41,15 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 	if (permeabilityCost.used)
 	{
 		double costPerm = 0.0;
-		for (int i = 0; i < params.permeability.size(); i++)
-			costPerm += params.permeability[i].Intensity(p);
+		for (int i = 0; i < params.permeabilityVols.size(); i++)
+			costPerm += params.permeabilityVols[i].Intensity(p);
 		cost += costPerm * permeabilityCost.weight;
 	}
 
 	// Inside/outside
 	{
-		// TODO(Axel)
+		bool is_out = (params.heightfield.GetValueBilinear(Vector2(p.x, p.z)) > p.y);
+		double costOut = is_out ? 100000.0 : 0;
 	}
 
 	// Orientation
@@ -74,50 +76,40 @@ int VolumetricGraph::NodeIndex(const Vector3& p) const
 
 /*!
 \brief Performs an adaptive sampling of the space based on provided geological features.
-Inception horizons are first sampled (as they are most important), then permeability volumes.
+Inception horizons are first sampled, then permeability volumes.
 Rest of space is then filled with a Poisson sphere distribution.
 */
 void VolumetricGraph::SampleSpace()
 {
 	// Horizon sampling
-	for (int i = 0; i < params.horizons.size(); i++)
+	Box2D horizonBox = params.heightfield.GetBox();
+	for (auto horizonZ : params.horizons)
 	{
-		// TODO(Axel)
+		std::vector<Vector2> horizonSamples;
+		horizonBox.Poisson(horizonSamples, params.poissonRadius, 50000);
+
+		for (auto p : horizonSamples)
+			samples.push_back(Vector3(p.x, horizonZ, p.y));
 	}
 
 	// Permeability sampling
-	for (int i = 0; i < params.permeability.size(); i++)
-	{
-		// TODO(Axel)
-	}
+	for (auto permeabilitySphere : params.permeabilityVols)
+		permeabilitySphere.Poisson(samples, params.poissonRadius, 5000);
 
-	// Poisson sampling 
+	// Poisson sampling for the rest of space
 	double zMin = params.heightfield.Min();
 	double zMax = params.heightfield.Max();
-	Box box = params.heightfield.GetBox().ToBox(zMin - 100.0, zMax + 50.0);
-	box.Poisson(samples, params.poissonRadius, 500000);
+	Box box = params.heightfield.GetBox().ToBox(zMin - params.elevationOffsetMin, zMax + params.elevationOffsetMax);
+	box.Poisson(samples, params.poissonRadius, 100000);
 
 	std::cout << "Sample count: " << samples.size() << std::endl;
 }
 
-
-/*
-\brief Initialize the volumetric cost graph from a set of key points.
-In our system, the graph of the domain is a nearest neighbour graph constructed from a Poisson sphere distribution in space.
-\param keyPts the key points
-\param hf the terrain
+/*!
+\brief Builds the nearest neighbour graph from the set of samples.
 */
-void VolumetricGraph::ComputeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& geologicalParams)
+void VolumetricGraph::BuildNearestNeighbourGraph()
 {
-	params = geologicalParams;
-
-	// Key points are added as samples
-	for (int i = 0; i < keyPts.size(); i++)
-		samples.push_back(keyPts[i].p);
-
-	// Adaptive sampling of space
-	SampleSpace();	
-
 	// Build nearest neighbor graph
 	struct Neighbour
 	{
@@ -154,6 +146,28 @@ void VolumetricGraph::ComputeCostGraph(const std::vector<KeyPoint>& keyPts, cons
 	}
 }
 
+
+/*
+\brief Initialize the volumetric cost graph from a set of key points.
+In our system, the graph of the domain is a nearest neighbour graph constructed from a Poisson sphere distribution in space.
+\param keyPts the key points
+\param hf the terrain
+*/
+void VolumetricGraph::InitializeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& geologicalParams)
+{
+	params = geologicalParams;
+
+	// Key points are added to sample set
+	for (int i = 0; i < keyPts.size(); i++)
+		samples.push_back(keyPts[i].p);
+
+	// Adaptive sampling of space
+	SampleSpace();	
+
+	// Nearest neighbour graph initialization
+	BuildNearestNeighbourGraph();
+}
+
 /*
 \brief Computes a karstic skeleton from a set of key points. 
 This function computes the complete graph between all key points, then prune the edges with a 3D gamma-skeleton approach.
@@ -167,7 +181,7 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 	for (int i = 0; i < pts.size(); i++)
 		keyPts.push_back({ NodeIndex(pts[i].p), pts[i].p, pts[i].type });
 	
-	// Allocates temporary all arrays
+	// Allocates all temporary arrays
 	std::vector<std::vector<double>> all_distances;
 	std::vector<std::vector<std::vector<int>>> all_paths;
 	all_paths.resize(keyPts.size());
@@ -178,14 +192,14 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 		all_paths[i].resize(keyPts.size());
 	}
 
-	// Compute complete graph between key points
+	// Compute complete graph between all key points
 	for (int i = 0; i < keyPts.size(); i++)
 	{
 		// We don't compute path starting from springs, which is actually not geomorphologically correct as
 		// two springs can be linked together by a path sometimes. But, the resulting networks look better this way :-)
 		if (keyPts[i].type == KeyPointType::Spring)
 			continue;
-		// We don't compute path starting from deadends, which is geomorphologically correct.
+		// We don't compute path starting from deadends
 		if (keyPts[i].type == KeyPointType::Deadend)
 			continue;
 
@@ -198,14 +212,18 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 		{
 			// Ignore same node
 			if (i == j) continue;
-			// Don't compute paths between sinks
+			// Ingore path between two sinks
 			if (keyPts[i].type == KeyPointType::Sink && keyPts[j].type == KeyPointType::Sink) continue;
 
 			int t = keyPts[j].index;
 			double pathSize;
 			std::vector<int> path = DijkstraGetShortestPathTo(t, previous, distances, pathSize);
 			if (path.size() <= 1)
+			{
+				std::cout << "This should not happen" << std::endl;
 				continue;
+			}
+
 			all_paths[i][j] = path;
 			all_distances[i][j] = pathSize;
 		}
@@ -240,7 +258,7 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 				continue;
 
 			// Second, check if there is a cheaper path from nodes[i] going through a node[k] to arrive at nodes[j]
-			double dij = Math::Pow(all_distances[i][j], gamma);
+			double d_ij = Math::Pow(all_distances[i][j], gamma);
 			bool keep = true;
 			for (int k = 0; k < all_paths[i].size(); k++)
 			{
@@ -248,9 +266,9 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 				if (all_paths[i][k].size() <= 1) continue;
 				if (all_paths[k][j].size() <= 1) continue;
 
-				double dik = Math::Pow(all_distances[i][k], gamma);
-				double dkj = Math::Pow(all_distances[k][j], gamma);
-				if (dik + dkj < dij)
+				double d_ik = Math::Pow(all_distances[i][k], gamma);
+				double d_kj = Math::Pow(all_distances[k][j], gamma);
+				if (d_ik + d_kj < d_ij)
 				{
 					keep = false;
 					break;
@@ -260,14 +278,15 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 				pathsFinal.push_back(all_paths[i][j]);
 		}
 	}
-	std::cout << "Nb Paths: " << pathsFinal.size() << std::endl;
+	std::cout << "Path count: " << pathsFinal.size() << std::endl;
 
 	// Build karstic skeleton structure
 	return KarsticSkeleton(this, pathsFinal);
 }
 
 /*!
-\brief Add new samples to the nearest neighbour graph structure. Existing samples are not removed, but their neighbours are modified.
+\brief Add new samples to the nearest neighbour graph structure. 
+Existing samples are not removed, but their neighbours are modified.
 \param samples new sample passed as key points
 */
 std::vector<VolumetricGraph::InternalKeyPoint> VolumetricGraph::AddNewSamples(const std::vector<KeyPoint>& newSamples)
@@ -318,4 +337,30 @@ std::vector<VolumetricGraph::InternalKeyPoint> VolumetricGraph::AddNewSamples(co
 		ret.push_back({ index, p, newSamples[i].type });
 	}
 	return ret;
+}
+
+
+/*!
+\brief Export the sample set as a point set file.
+\param path file path
+*/
+void VolumetricGraph::SaveSamples(const std::string& path) const
+{
+	std::ofstream out;
+	out.open(path);
+
+	// ply header
+	out << "ply\n";
+	out << "format ascii 1.0\n";
+	out << "element vertex " << samples.size() << "\n";
+	out << "property float x\n";
+	out << "property float y\n";
+	out << "property float z\n";
+	out << "end_header\n";
+
+	// data
+	for (auto p : samples)
+		out << p.x << " " << p.y << " " << p.z << "\n";
+
+	out.close();
 }
