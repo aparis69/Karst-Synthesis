@@ -27,7 +27,7 @@ void KarsticSkeleton::Amplify(VolumetricGraph* graph, const std::vector<KeyPoint
 	graph->AddNewSamples(newKeyPts);
 
 	// Then, we link the new samples to the existing network
-	auto newPaths = graph->AmplifyKarsticSkeleton(baseKeyPts, newKeyPts);
+	auto newPaths = graph->AmplifyKarsticSkeleton(nodes, newKeyPts);
 
 	// Update the internal karstic skeleton struture
 	AppendPaths(graph, newPaths);

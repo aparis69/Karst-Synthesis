@@ -7,7 +7,6 @@
 */
 VolumetricGraph::VolumetricGraph() : CostGraph(0)
 {
-	distanceCost = CostTerm(true, 1.0);
 }
 
 /*
@@ -19,11 +18,11 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 
 	// Distance cost
 	double cost = 0.0;
-	if (distanceCost.used)
-		cost += Magnitude(p - pn) * distanceCost.weight;
+	if (params.distanceCost.used)
+		cost += Magnitude(p - pn) * params.distanceCost.weight;
 
 	// Horizon cost
-	if (horizonCost.used)
+	if (params.horizonCost.used)
 	{
 		double nearestDist = 1e6;
 		for (int i = 0; i < params.horizons.size(); i++)
@@ -34,16 +33,18 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 		}
 
 		// TODO(axel): falloff with radius
-		cost += nearestDist * horizonCost.weight;
+		nearestDist = Math::Clamp(nearestDist, 0.0, 50.0);
+		double w = (1.0 - Math::CubicSmooth(nearestDist, 50.0));
+		cost += w * params.horizonCost.weight;
 	}
 
 	// Permeability
-	if (permeabilityCost.used)
+	if (params.permeabilityCost.used)
 	{
 		double costPerm = 0.0;
 		for (int i = 0; i < params.permeabilityVols.size(); i++)
 			costPerm += params.permeabilityVols[i].Intensity(p);
-		cost += costPerm * permeabilityCost.weight;
+		cost += costPerm * params.permeabilityCost.weight;
 	}
 
 	// Inside/outside
@@ -57,6 +58,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 		// TODO(Axel)
 	}
 
+	cost = Math::Clamp(cost, 0.0, cost);
 	return cost;
 }
 
@@ -255,7 +257,7 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 				continue;
 
 			// Second, check if there is a cheaper path from nodes[i] going through a node[k] to arrive at nodes[j]
-			double d_ij = Math::Pow(all_distances[i][j], gamma);
+			double d_ij = Math::Pow(all_distances[i][j], params.gamma);
 			bool keep = true;
 			for (int k = 0; k < all_paths[i].size(); k++)
 			{
@@ -263,8 +265,8 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 				if (all_paths[i][k].size() <= 1) continue;
 				if (all_paths[k][j].size() <= 1) continue;
 
-				double d_ik = Math::Pow(all_distances[i][k], gamma);
-				double d_kj = Math::Pow(all_distances[k][j], gamma);
+				double d_ik = Math::Pow(all_distances[i][k], params.gamma);
+				double d_kj = Math::Pow(all_distances[k][j], params.gamma);
 				if (d_ik + d_kj < d_ij)
 				{
 					keep = false;
@@ -286,9 +288,9 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 \param baseKeyPts
 \param newKeyPts
 */
-std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std::vector<KeyPoint>& baseKeyPts, const std::vector<KeyPoint>& newKeyPts)
+std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std::vector<KarsticNode>& baseSkeletonNodes, const std::vector<KeyPoint>& newKeyPts)
 {
-	// Our goal is to connect the new key points to the original network key points
+	// Our goal is to connect the new key points to the original network
 	std::vector<std::vector<int>> pathsFinal;
 	for (int i = 0; i < newKeyPts.size(); i++)
 	{
@@ -300,11 +302,11 @@ std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std:
 		
 		double minDist = 1e6;
 		std::vector<int> bestPath;
-		for (int j = 0; j < baseKeyPts.size(); j++)
+		for (int j = 0; j < baseSkeletonNodes.size(); j++)
 		{
 			if (i == j)
 				continue;
-			int endIndex = NodeIndex(baseKeyPts[j].p);
+			int endIndex = baseSkeletonNodes[j].index;
 			double totalDistance = 0.0;
 			std::vector<int> path = DijkstraGetShortestPathTo(endIndex, previous, distances, totalDistance);
 			if (path.size() <= 1)

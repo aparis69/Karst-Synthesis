@@ -3,40 +3,6 @@
 #include "basics.h"
 #include "geology.h"
 
-enum class KeyPointType
-{
-	Sink,		// Entrance
-	Spring,		// Exists
-	Waypoint,	// Waypoints are located inside the bedrock.
-	Deadend,	
-	Chamber,
-};
-
-enum class TunnelType
-{
-	// Phreatic
-	Tube,
-	Bed,
-
-	// Vadose
-	Epikarst,
-	Passage,
-	Keyhole,
-	Canyon,
-};
-
-class KeyPoint
-{
-public:
-	Vector3 p;
-	KeyPointType type;
-public:
-	inline explicit KeyPoint() { }
-	inline explicit KeyPoint(const Vector3& p, KeyPointType t) : p(p), type(t)
-	{
-	}
-};
-
 class KarsticSection
 {
 public:
@@ -109,16 +75,6 @@ protected:
 	std::vector<int> DijkstraGetShortestPathTo(int, const std::vector<int>&, const std::vector<double>&, double&) const;
 };
 
-class CostTerm
-{
-public:
-	bool used;
-	double weight;
-public:
-	inline explicit CostTerm() : used(false), weight(1.0) { }
-	inline explicit CostTerm(bool u, double w) : used(u), weight(w) { }
-};
-
 class VolumetricGraph : public CostGraph
 {
 protected:
@@ -134,28 +90,16 @@ protected:
 	std::vector<Vector3> samples;	//!< Graph nodes.
 	GeologicalParameters params;	//!< All geological parameters.
 
-	CostTerm distanceCost;
-	CostTerm fractureCost;
-	CostTerm horizonCost;
-	CostTerm permeabilityCost;
-	double gamma;
-
 public:
 	explicit VolumetricGraph();
 
 	double ComputeEdgeCost(const Vector3& p, const Vector3& pn) const;
 	void InitializeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& params);
 	KarsticSkeleton ComputeKarsticSkeleton(const std::vector<KeyPoint>& keyPts) const;
-	std::vector<std::vector<int>> AmplifyKarsticSkeleton(const std::vector<KeyPoint>& baseKeyPts, const std::vector<KeyPoint>& newKeyPts);
+	std::vector<std::vector<int>> AmplifyKarsticSkeleton(const std::vector<KarsticNode>& baseKeyPts, const std::vector<KeyPoint>& newKeyPts);
 	std::vector<InternalKeyPoint> AddNewSamples(const std::vector<KeyPoint>& samples);
 
-	inline void SetDistanceCost(const CostTerm& t) { distanceCost = t; }
-	inline void SetFractureCost(const CostTerm& t) { fractureCost = t; }
-	inline void SetHorizonCost(const CostTerm& t) { horizonCost = t; }
-	inline void SetPermeabilityCost(const CostTerm& t) { horizonCost = t; }
-	inline void SetGamma(double g) { gamma = g; }
 	inline Vector3 GetSample(int i) const { return samples[i]; }
-
 	void SaveSamples(const std::string& path) const;
 
 protected:
