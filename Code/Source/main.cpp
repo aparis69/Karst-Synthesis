@@ -120,15 +120,26 @@ int main()
 {
 	srand(1234);
 
-	GeologicalParameters params;
-	std::vector<KeyPoint> keyPts;
+	{
+		GeologicalParameters params;
+		std::vector<KeyPoint> keyPts;
+		GorgeNetwork(keyPts, params);
+		ComputeAndSaveSkeleton(params, keyPts);
+	}
 
-	//GorgeNetwork(baseKeyPoints, params);
-	//SuperimposedNetwork(keyPts, params);
-	SpongeworkNetwork(keyPts, params);
+	{
+		GeologicalParameters params;
+		std::vector<KeyPoint> keyPts;
+		SuperimposedNetwork(keyPts, params);
+		ComputeAndSaveSkeleton(params, keyPts);
+	}
 
-	ComputeAndSaveSkeleton(params, keyPts);
+	{
+		GeologicalParameters params;
+		std::vector<KeyPoint> keyPts;
+		SpongeworkNetwork(keyPts, params);
+		ComputeAndSaveSkeleton(params, keyPts);
+	}
 
-	std::cin.get();
 	return 0;
 }
