@@ -10,7 +10,9 @@ VolumetricGraph::VolumetricGraph() : CostGraph(0)
 }
 
 /*
-\brief Compute the cost at a given point, in a given direction.
+\brief Compute the cost between two points.
+\param p start position
+\param pn end position
 */
 double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) const
 {
@@ -61,7 +63,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 		cost += is_out ? 100000.0 : 0;
 	}
 
-	cost = Math::Clamp(cost, 0.0, cost);
+	cost = Math::Clamp(cost, 0.0, cost); // make sure to keep a positive cost for Dijsktra
 	return cost;
 }
 
@@ -86,26 +88,26 @@ Rest of space is then filled with a Poisson sphere distribution.
 */
 void VolumetricGraph::SampleSpace()
 {
-	// Horizon sampling
+	// Inception horizon sampling
 	Box2D horizonBox = params.heightfield.GetBox();
-	for (auto horizonZ : params.horizons)
+	for (const auto& horizonZ : params.horizons)
 	{
 		std::vector<Vector2> horizonSamples;
-		horizonBox.Poisson(horizonSamples, params.poissonRadius, 50000);
+		horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
 
 		for (auto p : horizonSamples)
 			samples.push_back(Vector3(p.x, horizonZ, p.y));
 	}
 
-	// Permeability sampling
-	for (auto permeabilitySphere : params.permeabilityVols)
-		permeabilitySphere.Poisson(samples, params.poissonRadius, 5000);
+	// Permeability volumes sampling
+	for (const auto& permeabilitySphere : params.permeabilityVols)
+		permeabilitySphere.Poisson(samples, params.graphPoissonRadius, 5000);
 
 	// Poisson sampling for the rest of space
 	double zMin = params.heightfield.Min();
 	double zMax = params.heightfield.Max();
 	Box box = params.heightfield.GetBox().ToBox(zMin - params.elevationOffsetMin, zMax + params.elevationOffsetMax);
-	box.Poisson(samples, params.poissonRadius, 100000);
+	box.Poisson(samples, params.graphPoissonRadius, 100000);
 
 	std::cout << "Sample count: " << samples.size() << std::endl;
 }
@@ -126,8 +128,8 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 		}
 	};
 	adj.resize(samples.size());
-	double R = 100.0 * 100.0;
-	int N = 32;
+	const double R = params.graphNeighbourRadius * params.graphNeighbourRadius;
+	const int N = params.graphNeighbourCount;
 	for (int i = 0; i < samples.size(); i++)
 	{
 		Vector3 p = samples[i];
@@ -153,10 +155,10 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 
 
 /*
-\brief Initialize the volumetric cost graph from a set of key points.
-In our system, the graph of the domain is a nearest neighbour graph constructed from a Poisson sphere distribution in space.
+\brief Initialize the volumetric cost graph from a set of key points and geological constraints.
+In our system, the graph of the domain is a nearest neighbour graph constructed from a Poisson sphere distribution in R^3.
 \param keyPts the key points
-\param hf the terrain
+\param geologicalParams the set of geological constraints provided by the user
 */
 void VolumetricGraph::InitializeCostGraph(const std::vector<KeyPoint>& keyPts, const GeologicalParameters& geologicalParams)
 {
@@ -175,8 +177,8 @@ void VolumetricGraph::InitializeCostGraph(const std::vector<KeyPoint>& keyPts, c
 
 /*
 \brief Computes a karstic skeleton from a set of key points. 
-This function computes the complete graph between all key points, then prune the edges with a 3D gamma-skeleton approach.
-Note that ComputeCostGraph() must be called before this function.
+This function computes the complete graph between all key points, then prunes the edges with a 3D gamma-skeleton approach.
+Note that InitializeCostGraph() must be called before this function.
 \param pts key points
 */
 KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoint>& pts) const
@@ -208,10 +210,10 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 		if (keyPts[i].type == KeyPointType::Deadend)
 			continue;
 
-		int s = keyPts[i].index;
+		int source = keyPts[i].index;
 		std::vector<double> distances;
 		std::vector<int> previous;
-		DijkstraComputePaths(s, distances, previous);
+		DijkstraComputePaths(source, distances, previous);
 
 		for (int j = 0; j < keyPts.size(); j++)
 		{
@@ -220,9 +222,9 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 			// Ingore path between two sinks
 			if (keyPts[i].type == KeyPointType::Sink && keyPts[j].type == KeyPointType::Sink) continue;
 
-			int t = keyPts[j].index;
+			int target = keyPts[j].index;
 			double pathSize;
-			std::vector<int> path = DijkstraGetShortestPathTo(t, previous, distances, pathSize);
+			std::vector<int> path = DijkstraGetShortestPathTo(target, previous, distances, pathSize);
 			if (path.size() <= 1)
 				continue;
 
@@ -236,10 +238,8 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 	{
 		for (int j = 0; j < all_paths.size(); j++)
 		{
-			if (all_paths[i][j].size() <= 1)
-				continue;
-			if (all_paths[j][i].size() <= 1)
-				continue;
+			if (all_paths[i][j].size() <= 1) continue;
+			if (all_paths[j][i].size() <= 1) continue;
 
 			// At this point, there is a path from i to j, and a path from j to i.
 			// Delete the most expensive one
@@ -288,8 +288,9 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 
 /*!
 \brief Amplify the graph from a new set of key points. The new points are linked to the existing base key points.
-\param baseKeyPts
-\param newKeyPts
+\param baseSkeletonNodes the existing network
+\param newKeyPts the new set of key point to connect to the existing network
+\return the set of added paths
 */
 std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std::vector<KarsticNode>& baseSkeletonNodes, const std::vector<KeyPoint>& newKeyPts)
 {
@@ -329,7 +330,7 @@ std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std:
 /*!
 \brief Add new samples to the nearest neighbour graph structure. 
 Existing samples are not removed, but their neighbours are modified.
-\param samples new sample passed as key points
+\param samples new samples passed as key points
 */
 std::vector<VolumetricGraph::InternalKeyPoint> VolumetricGraph::AddNewSamples(const std::vector<KeyPoint>& newSamples)
 {
@@ -342,8 +343,8 @@ std::vector<VolumetricGraph::InternalKeyPoint> VolumetricGraph::AddNewSamples(co
 			return d < nei.d;
 		}
 	};
-	double R = 100.0 * 100.0;
-	int N = 32;
+	const double R = params.graphNeighbourRadius * params.graphNeighbourRadius;
+	const int N = params.graphNeighbourCount;
 	std::vector<InternalKeyPoint> ret;
 	for (int i = 0; i < newSamples.size(); i++)
 	{
@@ -372,7 +373,7 @@ std::vector<VolumetricGraph::InternalKeyPoint> VolumetricGraph::AddNewSamples(co
 			// Forward cost (from new key point to existing sample)
 			SetEdge(index, candidates[j].i, ComputeEdgeCost(p, d));
 
-			// Compute the reverse cost as well (from existing sample to new key point)
+			// Backward cost (from existing sample to new key point)
 			SetEdge(candidates[j].i, index, ComputeEdgeCost(pn, -d));
 		}
 

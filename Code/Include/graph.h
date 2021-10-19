@@ -7,8 +7,6 @@ class KarsticSection
 {
 public:
 	int destIndex;
-	TunnelType type;
-	double radius;
 
 	inline bool operator==(int i) const
 	{
@@ -39,7 +37,7 @@ public:
 	inline explicit KarsticSkeleton() { }
 	KarsticSkeleton(const VolumetricGraph* graph, const std::vector<std::vector<int>>& paths);
 
-	void Amplify(VolumetricGraph* graph, const std::vector<KeyPoint>& baseKeyPts, std::vector<KeyPoint>& keyPts);
+	void Amplify(VolumetricGraph* graph, std::vector<KeyPoint>& keyPts);
 	Box GetBox() const;
 	void Save(const std::string& file) const;
 

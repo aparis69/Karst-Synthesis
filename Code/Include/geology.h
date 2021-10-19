@@ -8,20 +8,6 @@ enum class KeyPointType
 	Spring,		// Exists
 	Waypoint,	// Waypoints are located inside the bedrock.
 	Deadend,
-	Chamber,
-};
-
-enum class TunnelType
-{
-	// Phreatic
-	Tube,
-	Bed,
-
-	// Vadose
-	Epikarst,
-	Passage,
-	Keyhole,
-	Canyon,
 };
 
 class KeyPoint
@@ -87,7 +73,9 @@ class GeologicalParameters
 public:
 	std::string sceneName;
 
-	double poissonRadius;
+	double graphPoissonRadius;
+	double graphNeighbourRadius;
+	int graphNeighbourCount;
 
 	std::vector<double> horizons;
 	std::vector<PermeabilitySphere> permeabilityVols;

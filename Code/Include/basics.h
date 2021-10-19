@@ -1318,40 +1318,6 @@ public:
 	}
 
 	/*!
-	\brief Todo
-	*/
-	void Add(int i, int j, double v)
-	{
-		values[ToIndex1D(i, j)] += v;
-	}
-
-	/*!
-	\brief Todo
-	*/
-	void Remove(int i, int j, double v)
-	{
-		values[ToIndex1D(i, j)] -= v;
-	}
-
-	/*!
-	\brief Todo
-	*/
-	void Add(const ScalarField2D& field)
-	{
-		for (int i = 0; i < values.size(); i++)
-			values[i] += field.values[i];
-	}
-
-	/*!
-	\brief Todo
-	*/
-	void Remove(const ScalarField2D& field)
-	{
-		for (int i = 0; i < values.size(); i++)
-			values[i] -= field.values[i];
-	}
-
-	/*!
 	\brief Compute the bilinear interpolation at a given world point.
 	\param p world point.
 	*/
@@ -1419,18 +1385,6 @@ public:
 	inline void Set(int index, double v)
 	{
 		values[index] = v;
-	}
-
-	/*!
-	\brief Todo
-	*/
-	inline void ThresholdInferior(double t, double v)
-	{
-		for (int i = 0; i < values.size(); i++)
-		{
-			if (values[i] <= t)
-				values[i] = v;
-		}
 	}
 
 	/*!

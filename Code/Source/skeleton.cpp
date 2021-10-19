@@ -5,7 +5,7 @@
 #include <string>		// MSVC2017 requires this
 
 /*!
-\brief Constructor from a set of path, and the volumetric nearest neighbour graph.
+\brief Constructor from the volumetric nearest neighbour graph and a set of path.
 \param graph nearest neighbour graph
 \param paths all paths in the skeleton
 */
@@ -19,7 +19,7 @@ KarsticSkeleton::KarsticSkeleton(const VolumetricGraph* graph, const std::vector
 Calling this method with an empty parameter will procedurally place ten key points in the scene, and amplify the skeleton in the same way.
 \param keyPts new key points.
 */
-void KarsticSkeleton::Amplify(VolumetricGraph* graph, const std::vector<KeyPoint>& baseKeyPts, std::vector<KeyPoint>& newKeyPts)
+void KarsticSkeleton::Amplify(VolumetricGraph* graph, std::vector<KeyPoint>& newKeyPts)
 {
 	// if keyPts is empty, generate some procedurally
 	if (newKeyPts.empty())
@@ -56,7 +56,7 @@ std::vector<KeyPoint> KarsticSkeleton::GenerateKeyPoints() const
 }
 
 /*!
-\brief Computes the bounding box of the skeleton
+\brief Computes the bounding box of the skeleton.
 */
 Box KarsticSkeleton::GetBox() const
 {
@@ -82,7 +82,7 @@ int KarsticSkeleton::GetInternalIndex(int nodeIndex) const
 }
 
 /*!
-\brief
+\brief Appends a set of paths to the existing karstic skeleton.
 */
 void KarsticSkeleton::AppendPaths(const VolumetricGraph* graph, const std::vector<std::vector<int>>& paths)
 {
@@ -99,7 +99,7 @@ void KarsticSkeleton::AppendPaths(const VolumetricGraph* graph, const std::vecto
 			}
 		}
 	}
-	for (int i = 0; i < nodes.size(); i++)		// Edges
+	for (int i = 0; i < nodes.size(); i++)	// Edges
 	{
 		int nodeIndex = nodes[i].index;
 		std::vector<int> edges;
@@ -121,7 +121,7 @@ void KarsticSkeleton::AppendPaths(const VolumetricGraph* graph, const std::vecto
 		}
 		for (int j = 0; j < edges.size(); j++)
 		{
-			auto newSection = KarsticSection({ edges[j], TunnelType::Tube, 0.0 });
+			auto newSection = KarsticSection({ edges[j] });
 			if (std::find(nodes[i].connections.begin(), nodes[i].connections.end(), edges[j]) == nodes[i].connections.end())
 				nodes[i].connections.push_back(newSection);
 		}

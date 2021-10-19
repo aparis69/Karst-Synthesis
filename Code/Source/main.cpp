@@ -22,7 +22,9 @@ static void GorgeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& pa
 	params.fractureCost = CostTerm(false, 0.0);
 	params.gamma = 2.0;
 
-	params.poissonRadius = 10.0;
+	params.graphNeighbourCount = 32;
+	params.graphNeighbourRadius = 100.0;
+	params.graphPoissonRadius = 10.0;
 }
 
 static void SuperimposedNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
@@ -60,7 +62,9 @@ static void SuperimposedNetwork(std::vector<KeyPoint>& keyPts, GeologicalParamet
 	params.fractureCost = CostTerm(false, 0.0);
 	params.gamma = 2.0;
 
-	params.poissonRadius = 10.0;
+	params.graphNeighbourCount = 32;
+	params.graphNeighbourRadius = 100.0;
+	params.graphPoissonRadius = 10.0;
 }
 
 static void SpongeworkNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
@@ -91,7 +95,9 @@ static void SpongeworkNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameter
 	params.fractureCost = CostTerm(false, 0.0);
 	params.gamma = 1.05;
 
-	params.poissonRadius = 8.0;
+	params.graphNeighbourCount = 32;
+	params.graphNeighbourRadius = 100.0;
+	params.graphPoissonRadius = 8.0;
 }
 
 static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
@@ -144,7 +150,9 @@ static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalPara
 	params.fractureCost = CostTerm(true, 10.0);
 	params.gamma = 2.0;
 
-	params.poissonRadius = 15.0;
+	params.graphNeighbourCount = 32;
+	params.graphNeighbourRadius = 100.0;
+	params.graphPoissonRadius = 15.0;
 }
 
 
@@ -158,7 +166,7 @@ void ComputeAndSaveSkeleton(GeologicalParameters params, std::vector<KeyPoint>& 
 	KarsticSkeleton skel = graph.ComputeKarsticSkeleton(keyPts);
 
 	// Procedural amplification
-	skel.Amplify(&graph, keyPts, params.additionalKeyPts);
+	skel.Amplify(&graph, params.additionalKeyPts);
 
 	// Save
 	skel.Save(params.sceneName);
