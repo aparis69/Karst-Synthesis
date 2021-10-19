@@ -41,20 +41,24 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 	if (params.permeabilityCost.used)
 	{
 		double costPerm = 0.0;
-		for (int i = 0; i < params.permeabilityVols.size(); i++)
-			costPerm += params.permeabilityVols[i].Intensity(p);
+		for (auto sphere : params.permeabilityVols)
+			costPerm += sphere.Intensity(p);
 		cost += costPerm * params.permeabilityCost.weight;
+	}
+
+	// Fracture orientation
+	if (params.fractureCost.used)
+	{
+		double costFrac = 0.0;
+		for (auto f : params.fractures)
+			costFrac += f.Cost(d);
+		cost += costFrac * params.fractureCost.weight;
 	}
 
 	// Inside/outside
 	{
 		bool is_out = (params.heightfield.GetValueBilinear(Vector2(p.x, p.z)) > p.y);
-		double costOut = is_out ? 100000.0 : 0;
-	}
-
-	// Orientation
-	{
-		// TODO(Axel)
+		cost += is_out ? 100000.0 : 0;
 	}
 
 	cost = Math::Clamp(cost, 0.0, cost);

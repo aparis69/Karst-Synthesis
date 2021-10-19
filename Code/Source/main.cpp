@@ -96,7 +96,55 @@ static void SpongeworkNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameter
 
 static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
 {
-	// TODO
+	keyPts.push_back(KeyPoint(Vector3(60.4311, 52.6541, 261.446), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(-101.237, 52.1485, 219.241), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(-255.377, 44.3283, 138.243), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(-289.637, 37.8691, 358.579), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(-86.1126, 37.8371, 382.429), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(-446.468, 30.5388, 383.381), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(328.728, 48.0858, 414.128), KeyPointType::Sink));
+
+	keyPts.push_back(KeyPoint(Vector3(225.946, 37.5715, -324.888), KeyPointType::Spring));
+	keyPts.push_back(KeyPoint(Vector3(95.9676, 37.9612, -337.74), KeyPointType::Spring));
+	keyPts.push_back(KeyPoint(Vector3(-110.653, 35.7709, -373.92), KeyPointType::Spring));
+	keyPts.push_back(KeyPoint(Vector3(-275.73, 34.0925, -314.632), KeyPointType::Spring));
+	keyPts.push_back(KeyPoint(Vector3(472.035, 46.3118, -456.167), KeyPointType::Spring));
+
+	keyPts.push_back(KeyPoint(Vector3(-40, 45, -42), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(-262.777, 30.5283, -35), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(181.195, 163.99, -55), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(-149.457, 301.661, -44), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(311.746, -129.463, -35), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(0, 4.88059e-313, -25), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(412.401, 57.8162, -14), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(0, 4.88059e-313, -65), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(99.8656, 1.7859, -17), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(0, 4.88059e-313, -26), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(184.712, 336.452, -26), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(0, 4.88059e-313, -40), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(272.419, 266.214, -32), KeyPointType::Waypoint));
+	keyPts.push_back(KeyPoint(Vector3(0, 4.88059e-313, -29), KeyPointType::Waypoint));
+
+	params.sceneName = "rectilinear";
+
+	params.heightfield = ScalarField2D(256, 256, Box2D(Vector2(0), 750.0), 0.0);
+	params.elevationOffsetMin = 200.0;
+	params.elevationOffsetMax = 50.0;
+
+	params.fractures.push_back(FractureOrientation(Vector3(1, 0, 0), 1.0));
+	params.fractures.push_back(FractureOrientation(Vector3(0, 1, 0), 1.0));
+	params.fractures.push_back(FractureOrientation(Vector3(0, 0, 1), 1.0));
+	params.fractures.push_back(FractureOrientation(Vector3(-1, 0, 0), 1.0));
+	params.fractures.push_back(FractureOrientation(Vector3(0, -1, 0), 1.0));
+	params.fractures.push_back(FractureOrientation(Vector3(0, 0, -1), 1.0));
+
+	params.distanceCost = CostTerm(true, 1.0);
+	params.horizonCost = CostTerm(false, 0.0);
+	params.permeabilityCost = CostTerm(false, 0.0);
+	params.fractureCost = CostTerm(true, 10.0);
+	params.gamma = 2.0;
+
+	params.poissonRadius = 15.0;
 }
 
 
@@ -138,6 +186,13 @@ int main()
 		GeologicalParameters params;
 		std::vector<KeyPoint> keyPts;
 		SpongeworkNetwork(keyPts, params);
+		ComputeAndSaveSkeleton(params, keyPts);
+	}
+
+	{
+		GeologicalParameters params;
+		std::vector<KeyPoint> keyPts;
+		RectilinearMazeNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
 

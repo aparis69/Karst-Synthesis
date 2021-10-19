@@ -62,6 +62,26 @@ public:
 	}
 };
 
+class FractureOrientation
+{
+public:
+	Vector3 d;
+	double w;
+
+public:
+	inline FractureOrientation(const Vector3& dd, double ww)
+	{
+		d = dd;
+		w = ww;
+	}
+
+	inline double Cost(const Vector3& dir) const
+	{
+		double dot = Dot(d, dir);
+		return (1.0 - Math::CubicSmoothCompact(dot * dot, 1.0)) * 2.0 - 1.0;
+	}
+};
+
 class GeologicalParameters
 {
 public:
@@ -71,6 +91,7 @@ public:
 
 	std::vector<double> horizons;
 	std::vector<PermeabilitySphere> permeabilityVols;
+	std::vector<FractureOrientation> fractures;
 
 	ScalarField2D heightfield;
 	double elevationOffsetMin;
