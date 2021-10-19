@@ -34,5 +34,6 @@ You can use this code in any way you want, however please credit the original ar
 ```	
 
 ### Missing
-Some things are still missing from the original paper and will be included soon:
-* Rectilinear maze scene
+There are still some things missing from the paper implementation. They might be added in the future if someone is interested. What is not in the code:
+* Midpoint subdivision and classification of the network
+* Implict surface generation
