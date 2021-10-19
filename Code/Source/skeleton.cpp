@@ -89,11 +89,11 @@ void KarsticSkeleton::AppendPaths(const VolumetricGraph* graph, const std::vecto
 		for (int j = 0; j < paths[i].size(); j++)
 		{
 			int nodeIndex = paths[i][j];
-			auto it = std::find(nodes.begin(), nodes.end(), nodeIndex);
+			auto it = std::find(nodes.begin(), nodes.end(), KarsticNode(nodeIndex));
 			if (it == nodes.end())
 			{
 				Vector3 p = graph->GetSample(nodeIndex);
-				nodes.push_back({ nodeIndex, p });
+				nodes.push_back(KarsticNode(nodeIndex, p));
 			}
 		}
 	}
@@ -120,7 +120,7 @@ void KarsticSkeleton::AppendPaths(const VolumetricGraph* graph, const std::vecto
 		for (int j = 0; j < edges.size(); j++)
 		{
 			auto newSection = KarsticSection({ edges[j], TunnelType::Tube, 0.0 });
-			if (std::find(nodes[i].connections.begin(), nodes[i].connections.end(), edges[j]) == nodes[i].connections.end())
+			if (std::find(nodes[i].connections.begin(), nodes[i].connections.end(), newSection) == nodes[i].connections.end())
 				nodes[i].connections.push_back(newSection);
 		}
 	}

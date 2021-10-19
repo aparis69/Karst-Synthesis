@@ -10,9 +10,9 @@ public:
 	TunnelType type;
 	double radius;
 
-	inline bool operator==(int i) const
+	inline bool operator==(const KarsticSection& s) const
 	{
-		return (destIndex == i);
+		return (destIndex == s.destIndex);
 	}
 };
 
@@ -23,9 +23,20 @@ public:
 	Vector3 p;
 	std::vector<KarsticSection> connections;
 
-	inline bool operator==(const int& i) const
+	inline KarsticNode(int i)
 	{
-		return (index == i);
+		index = i;
+	}
+
+	inline KarsticNode(int i, const Vector3& pp)
+	{
+		index = i;
+		p = pp;
+	}
+
+	inline bool operator==(const KarsticNode& n) const
+	{
+		return (index == n.index);
 	}
 };
 
