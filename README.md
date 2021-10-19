@@ -27,8 +27,8 @@ You can use this code in any way you want, however please credit the original ar
               Adrien and Collon, Pauline and Galin, Eric},
     title = {Synthesizing Geologically Coherent Cave Networks},
     journal = {Computer Graphics Forum},
-    volume = {??},
-    number = {??},
+    volume = {40},
+    number = {7},
     year = {2021},
   }
 ```	
