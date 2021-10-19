@@ -1,6 +1,7 @@
 #include "graph.h"
 #include <fstream>		// for saving the skeleton into a text file
 #include <map>			// std::map
+#include <algorithm>	// std::find
 
 /*!
 \brief Constructor from a set of path, and the volumetric nearest neighbour graph.
