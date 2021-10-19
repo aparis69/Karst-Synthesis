@@ -23,7 +23,7 @@ public:
 	Vector3 p;
 	std::vector<KarsticSection> connections;
 
-	inline bool operator==(int i) const
+	inline bool operator==(const int& i) const
 	{
 		return (index == i);
 	}

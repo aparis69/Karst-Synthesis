@@ -32,7 +32,6 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 				nearestDist = d;
 		}
 
-		// TODO(axel): falloff with radius
 		nearestDist = Math::Clamp(nearestDist, 0.0, 50.0);
 		double w = (1.0 - Math::CubicSmooth(nearestDist, 50.0));
 		cost += w * params.horizonCost.weight;
