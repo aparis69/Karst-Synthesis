@@ -2,6 +2,7 @@
 #include <fstream>		// for saving the skeleton into a text file
 #include <map>			// std::map
 #include <algorithm>	// std::find
+#include <string>		// MSVC2017 requires this
 
 /*!
 \brief Constructor from a set of path, and the volumetric nearest neighbour graph.
