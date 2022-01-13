@@ -5,7 +5,7 @@
 enum class KeyPointType
 {
 	Sink,		// Entrance
-	Spring,		// Exists
+	Spring,		// Exit
 	Waypoint,	// Waypoints are located inside the bedrock.
 	Deadend,
 };
