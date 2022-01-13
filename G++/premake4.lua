@@ -1,5 +1,5 @@
 solution "KarstSynthesis"
-	configurations { "Debug", "Release" }
+	configurations { "release", "debug" }
 
 	platforms { "x64" }
 
@@ -7,12 +7,12 @@ solution "KarstSynthesis"
 
 	rootDir = path.getabsolute("../")
 
-	configuration "Debug"
+	configuration "debug"
 		targetdir "./Out/Debug"
 		defines { "DEBUG" }
 		flags { "Symbols" }
 
-	configuration "Release"
+	configuration "release"
 		targetdir "./Out/Release"
 		flags { "OptimizeSpeed" }
 

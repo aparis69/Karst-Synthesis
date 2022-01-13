@@ -5,6 +5,8 @@
 
 #include "graph.h"
 
+#include <chrono>
+
 static void GorgeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
 {
 	keyPts.push_back(KeyPoint(Vector3(-213.311, 36.3838, 329.722), KeyPointType::Sink));
@@ -176,6 +178,8 @@ int main()
 {
 	srand(1234);
 
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
 	{
 		GeologicalParameters params;
 		std::vector<KeyPoint> keyPts;
@@ -203,6 +207,10 @@ int main()
 		RectilinearMazeNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::cout << "Time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << "[s]" << std::endl;
+	std::cin.get();
 
 	return 0;
 }
