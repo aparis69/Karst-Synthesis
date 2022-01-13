@@ -2,6 +2,8 @@
 #include <algorithm> // for std::sort
 #include <fstream>	 // for saving sample file
 
+std::vector<Vector3> VolumetricGraph::bakedPoissonDistribution;
+
 /*
 \brief Default Constructor.
 */
@@ -94,7 +96,6 @@ void VolumetricGraph::SampleSpace()
 	{
 		std::vector<Vector2> horizonSamples;
 		horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
-
 		for (auto p : horizonSamples)
 			samples.push_back(Vector3(p.x, horizonZ, p.y));
 	}
@@ -107,9 +108,29 @@ void VolumetricGraph::SampleSpace()
 	double zMin = params.heightfield.Min();
 	double zMax = params.heightfield.Max();
 	Box box = params.heightfield.GetBox().ToBox(zMin - params.elevationOffsetMin, zMax + params.elevationOffsetMax);
-	box.Poisson(samples, params.graphPoissonRadius, 100000);
+		
+	// Procedural distribution (slower)
+	//box.Poisson(samples, params.graphPoissonRadius, 100000);
 
-	std::cout << "Sample count: " << samples.size() << std::endl;
+	// From baked distribution (faster)
+	double c = 4.0 * params.graphPoissonRadius * params.graphPoissonRadius;
+	for (int i = 0; i < bakedPoissonDistribution.size(); i++)
+	{
+		Vector3 t = bakedPoissonDistribution[i];
+		bool hit = false;
+		for (int j = 0; j < samples.size(); j++)
+		{
+			if (SquaredMagnitude(t - samples.at(j)) < c)
+			{
+				hit = true;
+				break;
+			}
+		}
+		if (hit == false)
+			samples.push_back(t);
+	}
+
+	std::cout << "Total sample count: " << samples.size() << std::endl;
 }
 
 /*!
@@ -151,6 +172,19 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 			SetEdge(i, candidates[j].i, ComputeEdgeCost(p, pn));
 		}
 	}
+}
+
+/*!
+\brief
+*/
+void VolumetricGraph::LoadPoissonSampleFile()
+{
+	size_t size;
+	std::ifstream rf("../Data/poissonSamples.dat", std::ios::out | std::ios::binary);
+	rf.read((char*)&size, sizeof(size));
+	bakedPoissonDistribution.resize(size);
+	for (int i = 0; i < size; i++)
+		rf.read((char*)&bakedPoissonDistribution[i], sizeof(Vector3));
 }
 
 

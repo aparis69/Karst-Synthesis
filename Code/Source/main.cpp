@@ -5,8 +5,6 @@
 
 #include "graph.h"
 
-#include <chrono>
-
 static void GorgeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
 {
 	keyPts.push_back(KeyPoint(Vector3(-213.311, 36.3838, 329.722), KeyPointType::Sink));
@@ -99,7 +97,7 @@ static void SpongeworkNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameter
 
 	params.graphNeighbourCount = 32;
 	params.graphNeighbourRadius = 100.0;
-	params.graphPoissonRadius = 8.0;
+	params.graphPoissonRadius = 10.0;
 }
 
 static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
@@ -154,21 +152,31 @@ static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalPara
 
 	params.graphNeighbourCount = 32;
 	params.graphNeighbourRadius = 100.0;
-	params.graphPoissonRadius = 15.0;
+	params.graphPoissonRadius = 10.0;
 }
 
+
+static long long timeInit = 0;
+static long long timeSkel = 0;
+static long long timeAmpl = 0;
 
 void ComputeAndSaveSkeleton(GeologicalParameters params, std::vector<KeyPoint>& keyPts)
 {
 	// Compute 3D cost graph
-	VolumetricGraph graph;
-	graph.InitializeCostGraph(keyPts, params);
+	MyChrono chrono;
+		VolumetricGraph graph;
+		graph.InitializeCostGraph(keyPts, params);
+	timeInit += chrono.ElapsedMs();
 
 	// Compute karstic skeleton
-	KarsticSkeleton skel = graph.ComputeKarsticSkeleton(keyPts);
+	chrono.Restart();
+		KarsticSkeleton skel = graph.ComputeKarsticSkeleton(keyPts);
+	timeSkel += chrono.ElapsedMs();
 
 	// Procedural amplification
-	skel.Amplify(&graph, params.additionalKeyPts);
+	chrono.Restart();
+		skel.Amplify(&graph, params.additionalKeyPts);
+	timeAmpl += chrono.ElapsedMs();
 
 	// Save
 	skel.Save(params.sceneName);
@@ -177,8 +185,17 @@ void ComputeAndSaveSkeleton(GeologicalParameters params, std::vector<KeyPoint>& 
 int main()
 {
 	srand(1234);
+	VolumetricGraph::LoadPoissonSampleFile();
 
-	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	//std::vector<Vector3> pts;
+	//Box2D(Vector2(0), 1000.0).ToBox(-200, 50).Poisson(pts, 15.0, 1000000);
+	//std::cout << pts.size() << std::endl;
+
+	//std::ofstream fout("data.dat", std::ios::out | std::ios::binary);
+	//size_t size = pts.size();
+	//fout.write((char*)&size, sizeof(size));
+	//fout.write((char*)&pts[0], size * sizeof(Vector3));
+	//fout.close();
 
 	{
 		GeologicalParameters params;
@@ -208,8 +225,10 @@ int main()
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
 
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	std::cout << "Time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << "[s]" << std::endl;
+	std::cout << std::endl;
+	std::cout << "Time init: " << timeInit << "ms" << std::endl;
+	std::cout << "Time skeleton: " << timeSkel << "ms" << std::endl;
+	std::cout << "Time amplification: " << timeAmpl << "ms" << std::endl;
 	std::cin.get();
 
 	return 0;
