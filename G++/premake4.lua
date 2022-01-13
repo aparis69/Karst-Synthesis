@@ -1,16 +1,11 @@
 solution "KarstSynthesis"
-	configurations { "release", "debug" }
+	configurations { "release" }
 
 	platforms { "x64" }
 
 	includedirs { ".", "../Code/Include/", "/usr/Include" }
 
 	rootDir = path.getabsolute("../")
-
-	configuration "debug"
-		targetdir "./Out/Debug"
-		defines { "DEBUG" }
-		flags { "Symbols" }
 
 	configuration "release"
 		targetdir "./Out/Release"
