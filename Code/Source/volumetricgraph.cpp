@@ -2,7 +2,8 @@
 #include <algorithm> // for std::sort
 #include <fstream>	 // for saving sample file
 
-std::vector<Vector3> VolumetricGraph::bakedPoissonDistribution;
+std::vector<Vector2> VolumetricGraph::bakedPoissonDistribution2D;
+std::vector<Vector3> VolumetricGraph::bakedPoissonDistribution3D;
 
 /*
 \brief Default Constructor.
@@ -95,9 +96,17 @@ void VolumetricGraph::SampleSpace()
 	for (const auto& horizonZ : params.horizons)
 	{
 		std::vector<Vector2> horizonSamples;
-		horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
-		for (auto p : horizonSamples)
+
+		// Procedural (slower)
+		//horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
+
+		// Baked
+		for (auto p : bakedPoissonDistribution2D)
+		{
+			if (horizonBox.Contains(p) == false)
+				continue;
 			samples.push_back(Vector3(p.x, horizonZ, p.y));
+		}
 	}
 
 	// Permeability volumes sampling
@@ -114,9 +123,9 @@ void VolumetricGraph::SampleSpace()
 
 	// From baked distribution (faster)
 	double c = 4.0 * params.graphPoissonRadius * params.graphPoissonRadius;
-	for (int i = 0; i < bakedPoissonDistribution.size(); i++)
+	for (int i = 0; i < bakedPoissonDistribution3D.size(); i++)
 	{
-		Vector3 t = bakedPoissonDistribution[i];
+		Vector3 t = bakedPoissonDistribution3D[i];
 		bool hit = false;
 		for (int j = 0; j < samples.size(); j++)
 		{
@@ -130,7 +139,7 @@ void VolumetricGraph::SampleSpace()
 			samples.push_back(t);
 	}
 
-	std::cout << "Total sample count: " << samples.size() << std::endl;
+	//std::cout << "Total sample count: " << samples.size() << std::endl;
 }
 
 /*!
@@ -151,6 +160,8 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 	adj.resize(samples.size());
 	const double R = params.graphNeighbourRadius * params.graphNeighbourRadius;
 	const int N = params.graphNeighbourCount;
+
+#pragma omp parallel for
 	for (int i = 0; i < samples.size(); i++)
 	{
 		Vector3 p = samples[i];
@@ -175,16 +186,27 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 }
 
 /*!
-\brief
+\brief Load baked poisson sphere/disc distribution from binary files.
 */
 void VolumetricGraph::LoadPoissonSampleFile()
 {
-	size_t size;
-	std::ifstream rf("../Data/poissonSamples.dat", std::ios::out | std::ios::binary);
-	rf.read((char*)&size, sizeof(size));
-	bakedPoissonDistribution.resize(size);
-	for (int i = 0; i < size; i++)
-		rf.read((char*)&bakedPoissonDistribution[i], sizeof(Vector3));
+	{
+		size_t size;
+		std::ifstream rf("../Data/poissonSamples3d.dat", std::ios::out | std::ios::binary);
+		rf.read((char*)&size, sizeof(size));
+		bakedPoissonDistribution3D.resize(size);
+		for (int i = 0; i < size; i++)
+			rf.read((char*)&bakedPoissonDistribution3D[i], sizeof(Vector3));
+	}
+
+	{
+		size_t size;
+		std::ifstream rf("../Data/poissonSamples2d.dat", std::ios::out | std::ios::binary);
+		rf.read((char*)&size, sizeof(size));
+		bakedPoissonDistribution2D.resize(size);
+		for (int i = 0; i < size; i++)
+			rf.read((char*)&bakedPoissonDistribution2D[i], sizeof(Vector2));
+	}
 }
 
 
@@ -203,7 +225,7 @@ void VolumetricGraph::InitializeCostGraph(const std::vector<KeyPoint>& keyPts, c
 		samples.push_back(keyPts[i].p);
 
 	// Adaptive sampling of space
-	SampleSpace();	
+	SampleSpace();
 
 	// Nearest neighbour graph initialization
 	BuildNearestNeighbourGraph();
@@ -314,7 +336,7 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 				pathsFinal.push_back(all_paths[i][j]);
 		}
 	}
-	std::cout << "Path count: " << pathsFinal.size() << std::endl;
+	//std::cout << "Path count: " << pathsFinal.size() << std::endl;
 
 	// Build karstic skeleton structure
 	return KarsticSkeleton(this, pathsFinal);
@@ -357,7 +379,7 @@ std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std:
 		}
 		pathsFinal.push_back(std::vector<int>(bestPath.begin(), bestPath.end()));
 	}
-	std::cout << "Additional path count: " << pathsFinal.size() << std::endl;
+	//std::cout << "Additional path count: " << pathsFinal.size() << std::endl;
 	return pathsFinal;
 }
 

@@ -4,6 +4,36 @@
 */
 
 #include "graph.h"
+#include <fstream>
+
+static void BakePoissonDistributionFiles()
+{
+	{
+		std::vector<Vector3> pts;
+		Box2D(Vector2(0), 1000.0).ToBox(-200, 50).Poisson(pts, 15.0, 1000000);
+		std::cout << pts.size() << std::endl;
+
+		std::ofstream fout("data3d.dat", std::ios::out | std::ios::binary);
+		size_t size = pts.size();
+		fout.write((char*)&size, sizeof(size));
+		fout.write((char*)&pts[0], size * sizeof(Vector3));
+		fout.close();
+	}
+
+	{
+		std::vector<Vector2> pts;
+		Box2D(Vector2(0), 1000.0).Poisson(pts, 15.0, 1000000);
+		std::cout << pts.size() << std::endl;
+
+		std::ofstream fout("data2d.dat", std::ios::out | std::ios::binary);
+		size_t size = pts.size();
+		fout.write((char*)&size, sizeof(size));
+		fout.write((char*)&pts[0], size * sizeof(Vector2));
+		fout.close();
+	}
+
+	std::cin.get();
+}
 
 static void GorgeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
 {
@@ -182,20 +212,14 @@ void ComputeAndSaveSkeleton(GeologicalParameters params, std::vector<KeyPoint>& 
 	skel.Save(params.sceneName);
 }
 
+
+
 int main()
 {
 	srand(1234);
+
+	//BakePoissonDistributionFiles();
 	VolumetricGraph::LoadPoissonSampleFile();
-
-	//std::vector<Vector3> pts;
-	//Box2D(Vector2(0), 1000.0).ToBox(-200, 50).Poisson(pts, 15.0, 1000000);
-	//std::cout << pts.size() << std::endl;
-
-	//std::ofstream fout("data.dat", std::ios::out | std::ios::binary);
-	//size_t size = pts.size();
-	//fout.write((char*)&size, sizeof(size));
-	//fout.write((char*)&pts[0], size * sizeof(Vector3));
-	//fout.close();
 
 	{
 		GeologicalParameters params;
@@ -226,6 +250,7 @@ int main()
 	}
 
 	std::cout << std::endl;
+	std::cout << "--------------------" << std::endl;
 	std::cout << "Time init: " << timeInit << "ms" << std::endl;
 	std::cout << "Time skeleton: " << timeSkel << "ms" << std::endl;
 	std::cout << "Time amplification: " << timeAmpl << "ms" << std::endl;

@@ -130,7 +130,8 @@ protected:
 	void BuildNearestNeighbourGraph();
 
 protected:
-	static std::vector<Vector3> bakedPoissonDistribution;
+	static std::vector<Vector3> bakedPoissonDistribution3D;
+	static std::vector<Vector2> bakedPoissonDistribution2D;
 public:
 	static void LoadPoissonSampleFile();
 };
