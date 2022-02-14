@@ -109,7 +109,7 @@ void VolumetricGraph::SampleSpace()
 	Box box = params.heightfield.GetBox().ToBox(zMin - params.elevationOffsetMin, zMax + params.elevationOffsetMax);
 	box.Poisson(samples, params.graphPoissonRadius, 100000);
 
-	std::cout << "Sample count: " << samples.size() << std::endl;
+	//std::cout << "Sample count: " << samples.size() << std::endl;
 }
 
 /*!
@@ -280,7 +280,7 @@ KarsticSkeleton VolumetricGraph::ComputeKarsticSkeleton(const std::vector<KeyPoi
 				pathsFinal.push_back(all_paths[i][j]);
 		}
 	}
-	std::cout << "Path count: " << pathsFinal.size() << std::endl;
+	//std::cout << "Path count: " << pathsFinal.size() << std::endl;
 
 	// Build karstic skeleton structure
 	return KarsticSkeleton(this, pathsFinal);
@@ -323,7 +323,7 @@ std::vector<std::vector<int>> VolumetricGraph::AmplifyKarsticSkeleton(const std:
 		}
 		pathsFinal.push_back(std::vector<int>(bestPath.begin(), bestPath.end()));
 	}
-	std::cout << "Additional path count: " << pathsFinal.size() << std::endl;
+	//std::cout << "Additional path count: " << pathsFinal.size() << std::endl;
 	return pathsFinal;
 }
 

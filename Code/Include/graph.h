@@ -3,6 +3,31 @@
 #include "basics.h"
 #include "geology.h"
 
+#include <chrono>
+
+struct MyChrono
+{
+public:
+	std::chrono::time_point<std::chrono::high_resolution_clock> chrono;
+
+	inline MyChrono()
+	{
+		chrono = std::chrono::high_resolution_clock::now();
+	}
+	inline void Restart()
+	{
+		chrono = std::chrono::high_resolution_clock::now();
+	}
+	inline long long ElapsedSeconds()
+	{
+		return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - chrono).count();
+	}
+	inline long long ElapsedMs()
+	{
+		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - chrono).count();
+	}
+};
+
 class KarsticSection
 {
 public:

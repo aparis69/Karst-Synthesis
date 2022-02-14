@@ -158,17 +158,27 @@ static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalPara
 }
 
 
+static long long timeInit = 0;
+static long long timeSkel = 0;
+static long long timeAmpl = 0;
+
 void ComputeAndSaveSkeleton(GeologicalParameters params, std::vector<KeyPoint>& keyPts)
 {
 	// Compute 3D cost graph
+	MyChrono chrono;
 	VolumetricGraph graph;
 	graph.InitializeCostGraph(keyPts, params);
+	timeInit += chrono.ElapsedMs();
 
 	// Compute karstic skeleton
+	chrono.Restart();
 	KarsticSkeleton skel = graph.ComputeKarsticSkeleton(keyPts);
+	timeSkel += chrono.ElapsedMs();
 
 	// Procedural amplification
+	chrono.Restart();
 	skel.Amplify(&graph, params.additionalKeyPts);
+	timeAmpl += chrono.ElapsedMs();
 
 	// Save
 	skel.Save(params.sceneName);
@@ -208,8 +218,11 @@ int main()
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
 
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	std::cout << "Time = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << "[s]" << std::endl;
+	std::cout << std::endl;
+	std::cout << "--------------------" << std::endl;
+	std::cout << "Time init: " << timeInit << "ms" << std::endl;
+	std::cout << "Time skeleton: " << timeSkel << "ms" << std::endl;
+	std::cout << "Time amplification: " << timeAmpl << "ms" << std::endl;
 	std::cin.get();
 
 	return 0;
