@@ -46,7 +46,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 	if (params.permeabilityCost.used)
 	{
 		double costPerm = 0.0;
-		for (auto sphere : params.permeabilityVols)
+		for (const auto& sphere : params.permeabilityVols)
 			costPerm += sphere.Intensity(p);
 		cost += costPerm * params.permeabilityCost.weight;
 	}
@@ -55,7 +55,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 	if (params.fractureCost.used)
 	{
 		double costFrac = 0.0;
-		for (auto f : params.fractures)
+		for (const auto& f : params.fractures)
 			costFrac += f.Cost(d);
 		cost += costFrac * params.fractureCost.weight;
 	}
