@@ -32,9 +32,9 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 		double nearestDist = 1e6;
 		for (int i = 0; i < params.horizons.size(); i++)
 		{
-			double d = Math::Abs((p[2] - params.horizons[i]));
-			if (d < nearestDist)
-				nearestDist = d;
+			double dist = Math::Abs((p[2] - params.horizons[i]));
+			if (dist < nearestDist)
+				nearestDist = dist;
 		}
 
 		nearestDist = Math::Clamp(nearestDist, 0.0, 50.0);
@@ -95,9 +95,8 @@ void VolumetricGraph::SampleSpace()
 	Box2D horizonBox = params.heightfield.GetBox();
 	for (const auto& horizonZ : params.horizons)
 	{
-		std::vector<Vector2> horizonSamples;
-
 		// Procedural (slower)
+		// std::vector<Vector2> horizonSamples;
 		//horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
 
 		// Baked

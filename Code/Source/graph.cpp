@@ -42,7 +42,7 @@ void CostGraph::DijkstraComputePaths(int source, std::vector<double>& distance, 
 
         // Visit each edge exiting u
         const std::vector<GraphEdge>& neighbors = adj[u];
-        for (std::vector<GraphEdge>::const_iterator neighbor_iter = neighbors.begin(); neighbor_iter != neighbors.end(); neighbor_iter++)
+        for (std::vector<GraphEdge>::const_iterator neighbor_iter = neighbors.begin(); neighbor_iter != neighbors.end(); ++neighbor_iter)
         {
             int v = neighbor_iter->target;
             double weight = neighbor_iter->weight;

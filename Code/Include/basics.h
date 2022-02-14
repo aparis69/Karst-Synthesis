@@ -106,7 +106,7 @@ inline Plane::Plane()
 /*!
 \brief Constructor from a point and a normal.
 \param pp point on the plane
-\param plane normal (should be normalized)
+\param nn plane normal (should be normalized)
 */
 inline Plane::Plane(const Vector3& pp, const Vector3& nn)
 {
@@ -160,7 +160,10 @@ inline int Plane::Side(const Vector3& pp) const
 }
 
 /*!
-\brief
+\brief Compute the intersection between three planes.
+\param a, b, c the planes
+\param p returned intersection point
+\return true if intersection occured, false otherwise
 */
 inline bool Plane::Intersection(const Plane& a, const Plane& b, const Plane& c, Vector3& p)
 {
