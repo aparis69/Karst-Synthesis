@@ -110,7 +110,7 @@ static void SpongeworkNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameter
 
 	std::vector<Vector3> waypoints;
 	Box2D(Vector2(0), 200.0).ToBox(-200.0, 0.0).Poisson(waypoints, 15.0, 50);
-	for (auto p : waypoints)
+	for (const auto& p : waypoints)
 		keyPts.push_back(KeyPoint(p, Random::Uniform() > 0.65 ? KeyPointType::Waypoint : KeyPointType::Deadend));
 
 	params.sceneName = "spongework";

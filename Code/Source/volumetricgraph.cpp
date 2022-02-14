@@ -100,7 +100,7 @@ void VolumetricGraph::SampleSpace()
 		//horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
 
 		// Baked
-		for (auto p : bakedPoissonDistribution2D)
+		for (const auto& p : bakedPoissonDistribution2D)
 		{
 			if (horizonBox.Contains(p) == false)
 				continue;
@@ -190,7 +190,7 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 void VolumetricGraph::LoadPoissonSampleFile()
 {
 	{
-		size_t size;
+		size_t size = 0;
 		std::ifstream rf("../Data/poissonSamples3d.dat", std::ios::out | std::ios::binary);
 		rf.read((char*)&size, sizeof(size));
 		bakedPoissonDistribution3D.resize(size);
@@ -199,7 +199,7 @@ void VolumetricGraph::LoadPoissonSampleFile()
 	}
 
 	{
-		size_t size;
+		size_t size = 0;
 		std::ifstream rf("../Data/poissonSamples2d.dat", std::ios::out | std::ios::binary);
 		rf.read((char*)&size, sizeof(size));
 		bakedPoissonDistribution2D.resize(size);
