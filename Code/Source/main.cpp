@@ -57,6 +57,30 @@ static void GorgeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& pa
 	params.graphPoissonRadius = 10.0;
 }
 
+static void GorgePermeability(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
+{
+	keyPts.push_back(KeyPoint(Vector3(-213.311, 36.3838, 329.722), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(146.786, 39.7847, -284.607), KeyPointType::Spring));
+
+	params.sceneName = "permeability";
+
+	params.heightfield = ScalarField2D(256, 256, Box2D(Vector2(0), 750.0), 0.0);
+	params.elevationOffsetMin = 200.0;
+	params.elevationOffsetMax = 50.0;
+
+	params.permeabilityVols.push_back(PermeabilitySphere(Vector3(96.8492, 0.0, 126.804), 100.0, -1000.0));
+
+	params.distanceCost = CostTerm(true, 1.0);
+	params.horizonCost = CostTerm(false, 0.0);
+	params.permeabilityCost = CostTerm(true, 1.0);
+	params.fractureCost = CostTerm(false, 0.0);
+	params.gamma = 2.0;
+
+	params.graphNeighbourCount = 32;
+	params.graphNeighbourRadius = 100.0;
+	params.graphPoissonRadius = 10.0;
+}
+
 static void SuperimposedNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
 {
 	keyPts.push_back(KeyPoint(Vector3(-187.617, 36.9296, 346.747), KeyPointType::Sink));
@@ -225,6 +249,13 @@ int main()
 		GeologicalParameters params;
 		std::vector<KeyPoint> keyPts;
 		GorgeNetwork(keyPts, params);
+		ComputeAndSaveSkeleton(params, keyPts);
+	}
+
+	{
+		GeologicalParameters params;
+		std::vector<KeyPoint> keyPts;
+		GorgePermeability(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
 
