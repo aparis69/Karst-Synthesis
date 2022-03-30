@@ -12,6 +12,14 @@ struct Vector4;
 // Maths utility
 namespace Math
 {
+	const float Pi = 3.14159265358979323846f;
+	const float HalfPi = Pi / 2.0f;
+
+	inline float Angle(int k, int n)
+	{
+		return (2.0f * Math::Pi * k) / n;
+	}
+
 	inline double Clamp(double x, double a = 0.0f, double b = 1.0f)
 	{
 		return x < a ? a : x > b ? b : x;
@@ -170,6 +178,8 @@ public:
 				return 2;
 		}
 	}
+	Vector3 Orthogonal() const;
+	void Orthonormal(Vector3& x, Vector3& y) const;
 	static inline Vector3 Min(const Vector3& a, const Vector3& b)
 	{
 		return Vector3(Math::Min(a.x, b.x), Math::Min(a.y, b.y), Math::Min(a.z, b.z));
@@ -232,6 +242,56 @@ inline Vector3 operator*(double a, const Vector3& v)
 inline Vector3 Abs(const Vector3& u)
 {
 	return Vector3(u[0] > 0.0 ? u[0] : -u[0], u[1] > 0.0 ? u[1] : -u[1], u[2] > 0.0 ? u[2] : -u[2]);
+}
+
+/*!
+\brief Returns a vector orthogonal to the argument vector.
+
+The returned orthogonal vector is not computed randomly.
+First, we find the two coordinates of the argument vector with
+maximum absolute value. The orthogonal vector is defined by
+swapping those two coordinates and changing one sign, whereas
+the third coordinate is set to 0.
+
+The returned orthogonal vector lies in the plane orthogonal
+to the first vector.
+*/
+inline Vector3 Vector3::Orthogonal() const
+{
+	Vector3 a = Abs(*this);
+	int i = 0;
+	int j = 1;
+	if (a[0] > a[1])
+	{
+		if (a[2] > a[1])
+		{
+			j = 2;
+		}
+	}
+	else
+	{
+		i = 1;
+		j = 2;
+		if (a[0] > a[2])
+		{
+			j = 0;
+		}
+	}
+	a = Vector3(0);
+	a[i] = operator[](j);
+	a[j] = -operator[](i);
+	return a;
+}
+/*!
+\brief Given a vector, creates two vectors xand y that form an orthogonal basis.
+
+This algorithm pickes the minor axis in order to reduce numerical instability
+\param x, y Returned vectors such that (x,y,n) form an orthonormal basis (provided n is normalized).
+*/
+inline void Vector3::Orthonormal(Vector3& x, Vector3& y) const
+{
+	x = Normalize(Orthogonal());
+	y = Normalize(Cross(*this, x));
 }
 
 /* Vector2 */

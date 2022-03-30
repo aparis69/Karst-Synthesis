@@ -233,10 +233,9 @@ void ComputeAndSaveSkeleton(GeologicalParameters params, std::vector<KeyPoint>& 
 	timeAmpl += chrono.ElapsedMs();
 
 	// Save
-	skel.Save(params.sceneName);
+	skel.SaveDAT(params.sceneName);
+	skel.SaveObj(params.sceneName);
 }
-
-
 
 int main()
 {
@@ -290,7 +289,7 @@ int main()
 	std::cout << "Total Time init: " << timeInit << "ms" << std::endl;
 	std::cout << "Total Time skeleton computation: " << timeSkel << "ms" << std::endl;
 	std::cout << "Total Time amplification: " << timeAmpl << "ms" << std::endl;
-	std::cin.get();
+	//std::cin.get();
 
 	return 0;
 }

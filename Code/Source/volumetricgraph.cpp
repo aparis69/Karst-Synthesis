@@ -457,7 +457,7 @@ void VolumetricGraph::SaveSamples(const std::string& path) const
 	out << "end_header\n";
 
 	// data
-	for (auto p : samples)
+	for (const auto& p : samples)
 		out << p.x << " " << p.y << " " << p.z << "\n";
 
 	out.close();

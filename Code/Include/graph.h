@@ -64,7 +64,8 @@ public:
 
 	void Amplify(VolumetricGraph* graph, std::vector<KeyPoint>& keyPts);
 	Box GetBox() const;
-	void Save(const std::string& file) const;
+	void SaveDAT(const std::string& file) const;
+	void SaveObj(const std::string& file) const;
 
 private:
 	int GetInternalIndex(int index) const;
