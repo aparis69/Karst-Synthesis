@@ -251,6 +251,7 @@ int main()
 		GorgeNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene gorge -- ok" << std::endl;
 
 	{
 		GeologicalParameters params;
@@ -258,6 +259,7 @@ int main()
 		GorgePermeability(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene permeability -- ok" << std::endl;
 
 	{
 		GeologicalParameters params;
@@ -265,6 +267,7 @@ int main()
 		SuperimposedNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene superimposed -- ok" << std::endl;
 
 	{
 		GeologicalParameters params;
@@ -272,6 +275,7 @@ int main()
 		SpongeworkNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene spongework -- ok" << std::endl;
 
 	{
 		GeologicalParameters params;
@@ -279,12 +283,13 @@ int main()
 		RectilinearMazeNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene rectilinear maze -- ok" << std::endl;
 
 	std::cout << std::endl;
 	std::cout << "--------------------" << std::endl;
-	std::cout << "Time init: " << timeInit << "ms" << std::endl;
-	std::cout << "Time skeleton: " << timeSkel << "ms" << std::endl;
-	std::cout << "Time amplification: " << timeAmpl << "ms" << std::endl;
+	std::cout << "Total Time init: " << timeInit << "ms" << std::endl;
+	std::cout << "Total Time skeleton computation: " << timeSkel << "ms" << std::endl;
+	std::cout << "Total Time amplification: " << timeAmpl << "ms" << std::endl;
 	std::cin.get();
 
 	return 0;
