@@ -2,6 +2,9 @@
 #include <algorithm> // for std::sort
 #include <fstream>	 // for saving sample file
 
+std::vector<Vector2> VolumetricGraph::bakedPoissonDistribution2D;
+std::vector<Vector3> VolumetricGraph::bakedPoissonDistribution3D;
+
 /*
 \brief Default Constructor.
 */
@@ -29,9 +32,9 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 		double nearestDist = 1e6;
 		for (int i = 0; i < params.horizons.size(); i++)
 		{
-			double d = Math::Abs((p[2] - params.horizons[i]));
-			if (d < nearestDist)
-				nearestDist = d;
+			double dist = Math::Abs((p[2] - params.horizons[i]));
+			if (dist < nearestDist)
+				nearestDist = dist;
 		}
 
 		nearestDist = Math::Clamp(nearestDist, 0.0, 50.0);
@@ -43,7 +46,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 	if (params.permeabilityCost.used)
 	{
 		double costPerm = 0.0;
-		for (auto sphere : params.permeabilityVols)
+		for (const auto& sphere : params.permeabilityVols)
 			costPerm += sphere.Intensity(p);
 		cost += costPerm * params.permeabilityCost.weight;
 	}
@@ -52,7 +55,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 	if (params.fractureCost.used)
 	{
 		double costFrac = 0.0;
-		for (auto f : params.fractures)
+		for (const auto& f : params.fractures)
 			costFrac += f.Cost(d);
 		cost += costFrac * params.fractureCost.weight;
 	}
@@ -92,11 +95,17 @@ void VolumetricGraph::SampleSpace()
 	Box2D horizonBox = params.heightfield.GetBox();
 	for (const auto& horizonZ : params.horizons)
 	{
-		std::vector<Vector2> horizonSamples;
-		horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
+		// Procedural (slower)
+		// std::vector<Vector2> horizonSamples;
+		//horizonBox.Poisson(horizonSamples, params.graphPoissonRadius, 50000);
 
-		for (auto p : horizonSamples)
+		// Baked
+		for (const auto& p : bakedPoissonDistribution2D)
+		{
+			if (horizonBox.Contains(p) == false)
+				continue;
 			samples.push_back(Vector3(p.x, horizonZ, p.y));
+		}
 	}
 
 	// Permeability volumes sampling
@@ -107,9 +116,29 @@ void VolumetricGraph::SampleSpace()
 	double zMin = params.heightfield.Min();
 	double zMax = params.heightfield.Max();
 	Box box = params.heightfield.GetBox().ToBox(zMin - params.elevationOffsetMin, zMax + params.elevationOffsetMax);
-	box.Poisson(samples, params.graphPoissonRadius, 100000);
+		
+	// Procedural distribution (slower)
+	//box.Poisson(samples, params.graphPoissonRadius, 100000);
 
-	//std::cout << "Sample count: " << samples.size() << std::endl;
+	// From baked distribution (faster)
+	double c = 4.0 * params.graphPoissonRadius * params.graphPoissonRadius;
+	for (int i = 0; i < bakedPoissonDistribution3D.size(); i++)
+	{
+		Vector3 t = bakedPoissonDistribution3D[i];
+		bool hit = false;
+		for (int j = 0; j < samples.size(); j++)
+		{
+			if (SquaredMagnitude(t - samples.at(j)) < c)
+			{
+				hit = true;
+				break;
+			}
+		}
+		if (hit == false)
+			samples.push_back(t);
+	}
+
+	//std::cout << "Total sample count: " << samples.size() << std::endl;
 }
 
 /*!
@@ -130,6 +159,8 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 	adj.resize(samples.size());
 	const double R = params.graphNeighbourRadius * params.graphNeighbourRadius;
 	const int N = params.graphNeighbourCount;
+
+#pragma omp parallel for
 	for (int i = 0; i < samples.size(); i++)
 	{
 		Vector3 p = samples[i];
@@ -153,6 +184,30 @@ void VolumetricGraph::BuildNearestNeighbourGraph()
 	}
 }
 
+/*!
+\brief Load baked poisson sphere/disc distribution from binary files.
+*/
+void VolumetricGraph::LoadPoissonSampleFile()
+{
+	{
+		size_t size = 0;
+		std::ifstream rf("../Data/poissonSamples3d.dat", std::ios::out | std::ios::binary);
+		rf.read((char*)&size, sizeof(size));
+		bakedPoissonDistribution3D.resize(size);
+		for (int i = 0; i < size; i++)
+			rf.read((char*)&bakedPoissonDistribution3D[i], sizeof(Vector3));
+	}
+
+	{
+		size_t size = 0;
+		std::ifstream rf("../Data/poissonSamples2d.dat", std::ios::out | std::ios::binary);
+		rf.read((char*)&size, sizeof(size));
+		bakedPoissonDistribution2D.resize(size);
+		for (int i = 0; i < size; i++)
+			rf.read((char*)&bakedPoissonDistribution2D[i], sizeof(Vector2));
+	}
+}
+
 
 /*
 \brief Initialize the volumetric cost graph from a set of key points and geological constraints.
@@ -169,7 +224,7 @@ void VolumetricGraph::InitializeCostGraph(const std::vector<KeyPoint>& keyPts, c
 		samples.push_back(keyPts[i].p);
 
 	// Adaptive sampling of space
-	SampleSpace();	
+	SampleSpace();
 
 	// Nearest neighbour graph initialization
 	BuildNearestNeighbourGraph();
@@ -402,7 +457,7 @@ void VolumetricGraph::SaveSamples(const std::string& path) const
 	out << "end_header\n";
 
 	// data
-	for (auto p : samples)
+	for (const auto& p : samples)
 		out << p.x << " " << p.y << " " << p.z << "\n";
 
 	out.close();

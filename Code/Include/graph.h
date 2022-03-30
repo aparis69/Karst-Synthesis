@@ -64,7 +64,8 @@ public:
 
 	void Amplify(VolumetricGraph* graph, std::vector<KeyPoint>& keyPts);
 	Box GetBox() const;
-	void Save(const std::string& file) const;
+	void SaveDAT(const std::string& file) const;
+	void SaveObj(const std::string& file) const;
 
 private:
 	int GetInternalIndex(int index) const;
@@ -128,4 +129,10 @@ public:
 protected:
 	void SampleSpace();
 	void BuildNearestNeighbourGraph();
+
+protected:
+	static std::vector<Vector3> bakedPoissonDistribution3D;
+	static std::vector<Vector2> bakedPoissonDistribution2D;
+public:
+	static void LoadPoissonSampleFile();
 };

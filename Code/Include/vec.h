@@ -12,31 +12,17 @@ struct Vector4;
 // Maths utility
 namespace Math
 {
+	const float Pi = 3.14159265358979323846f;
+	const float HalfPi = Pi / 2.0f;
+
+	inline float Angle(int k, int n)
+	{
+		return (2.0f * Math::Pi * k) / n;
+	}
+
 	inline double Clamp(double x, double a = 0.0f, double b = 1.0f)
 	{
 		return x < a ? a : x > b ? b : x;
-	}
-
-	/*!
-	\brief Create a linear step.
-	\param x Value
-	\param a, b Interval values.
-	\return Real in unit inverval.
-	*/
-	inline double Step(double x, double a, double b)
-	{
-		if (x < a)
-		{
-			return 0.0f;
-		}
-		else if (x > b)
-		{
-			return 1.0f;
-		}
-		else
-		{
-			return (x - a) / (b - a);
-		}
 	}
 
 	template<typename T>
@@ -51,12 +37,6 @@ namespace Math
 		return a > b ? a : b;
 	}
 
-	template<typename T>
-	inline T Lerp(T a, T b, double t)
-	{
-		return (a * (1.0f - t)) + (b * t);
-	}
-
 	inline double Abs(double a)
 	{
 		return a < 0 ? -a : a;
@@ -67,57 +47,9 @@ namespace Math
 		return (x > r) ? 0.0f : (1.0f - x / r) * (1.0f - x / r) * (1.0f - x / r);
 	}
 
-	inline double CubicSigmoid(double x, double r, double t)
-	{
-		if (x > 0.0f)
-		{
-			if (x < r)
-			{
-				return x * (1.0f + x * ((3.0f * t - 2.0f * r) / (r * r) + x * (r - 2.0f * t) / (r * r * r)));
-			}
-			else
-			{
-				return t;
-			}
-		}
-		else
-		{
-			if (x > -r)
-			{
-				// Use symmetric
-				double y = -x;
-				return  -(y * (1.0f + y * ((3.0f * t - 2.0f * r) / (r * r) + y * (r - 2.0f * t) / (r * r * r))));
-			}
-			else
-			{
-				return -t;
-			}
-		}
-	}
-
-	inline double CubicSmooth(double x)
-	{
-		return x * x * (3.0f - 2.0f * x);
-	}
-
 	inline double CubicSmooth(double x, double r)
 	{
 		return (1.0f - x / r) * (1.0f - x / r) * (1.0f - x / r);
-	}
-
-	inline double CubicSmoothStep(double x, double a, double b)
-	{
-		if (x < a)
-			return 0.0f;
-		else if (x > b)
-			return 1.0f;
-		else
-			return 1.0f - CubicSmooth((x - a) * (x - a), (b - a) * (b - a));
-	}
-
-	inline double QuinticSmooth(double t)
-	{
-		return pow(t, 3.0f) * (t * (t * 6.0f - 15.0f) + 10.0f);
 	}
 
 	inline double Pow(double x, double e)
@@ -136,27 +68,6 @@ namespace Math
 		}
 	}
 }
-
-
-/* Vector2i */
-struct Vector2i
-{
-public:
-	int x, y;
-
-	explicit Vector2i() : x(0), y(0) {}
-	explicit Vector2i(int n) : x(n), y(n) {}
-	explicit Vector2i(int x, int y) : x(x), y(y) {}
-
-	Vector2i operator-(const Vector2i& u) const
-	{
-		return Vector2i(x - u.x, y - u.y);
-	}
-	Vector2i operator+(const Vector2i& u) const
-	{
-		return Vector2i(x + u.x, y + u.y);
-	}
-};
 
 
 /* Vector3 */
@@ -267,6 +178,8 @@ public:
 				return 2;
 		}
 	}
+	Vector3 Orthogonal() const;
+	void Orthonormal(Vector3& x, Vector3& y) const;
 	static inline Vector3 Min(const Vector3& a, const Vector3& b)
 	{
 		return Vector3(Math::Min(a.x, b.x), Math::Min(a.y, b.y), Math::Min(a.z, b.z));
@@ -331,6 +244,56 @@ inline Vector3 Abs(const Vector3& u)
 	return Vector3(u[0] > 0.0 ? u[0] : -u[0], u[1] > 0.0 ? u[1] : -u[1], u[2] > 0.0 ? u[2] : -u[2]);
 }
 
+/*!
+\brief Returns a vector orthogonal to the argument vector.
+
+The returned orthogonal vector is not computed randomly.
+First, we find the two coordinates of the argument vector with
+maximum absolute value. The orthogonal vector is defined by
+swapping those two coordinates and changing one sign, whereas
+the third coordinate is set to 0.
+
+The returned orthogonal vector lies in the plane orthogonal
+to the first vector.
+*/
+inline Vector3 Vector3::Orthogonal() const
+{
+	Vector3 a = Abs(*this);
+	int i = 0;
+	int j = 1;
+	if (a[0] > a[1])
+	{
+		if (a[2] > a[1])
+		{
+			j = 2;
+		}
+	}
+	else
+	{
+		i = 1;
+		j = 2;
+		if (a[0] > a[2])
+		{
+			j = 0;
+		}
+	}
+	a = Vector3(0);
+	a[i] = operator[](j);
+	a[j] = -operator[](i);
+	return a;
+}
+/*!
+\brief Given a vector, creates two vectors xand y that form an orthogonal basis.
+
+This algorithm pickes the minor axis in order to reduce numerical instability
+\param x, y Returned vectors such that (x,y,n) form an orthonormal basis (provided n is normalized).
+*/
+inline void Vector3::Orthonormal(Vector3& x, Vector3& y) const
+{
+	x = Normalize(Orthogonal());
+	y = Normalize(Cross(*this, x));
+}
+
 /* Vector2 */
 struct Vector2
 {
@@ -338,7 +301,6 @@ public:
 	double x, y;
 
 	explicit Vector2() : x(0.0f), y(0.0f) { }
-	explicit Vector2(const Vector2i& v) : x(double(v.x)), y(double(v.y)) { }
 	explicit Vector2(double n) : x(n), y(n) { }
 	explicit Vector2(double x, double y) : x(x), y(y) { }
 	explicit Vector2(const Vector3& v) : x(v.x), y(v.z) { }
@@ -467,136 +429,4 @@ inline bool operator<=(const Vector2& u, const Vector2& v)
 inline Vector2 Abs(const Vector2& u)
 {
 	return Vector2(u[0] > 0.0 ? u[0] : -u[0], u[1] > 0.0 ? u[1] : -u[1]);
-}
-
-/* Matrix3 */
-struct Matrix3
-{
-public:
-	double r[9];
-
-	Matrix3();
-	Matrix3(const Vector3& a, const Vector3& b, const Vector3& c);
-	Matrix3(double a00, double a01, double a02, double a10, double a11, double a12, double a20, double a21, double a22);
-	double Determinant() const;
-	double& operator() (int, int);
-	double operator() (int, int) const;
-};
-
-inline Matrix3::Matrix3()
-{
-	for (int i = 0; i < 9; i++)
-		r[i] = 0.0f;
-}
-
-inline Matrix3::Matrix3(const Vector3& a, const Vector3& b, const Vector3& c)
-{
-	r[0] = a[0];
-	r[1] = a[1];
-	r[2] = a[2];
-
-	r[3] = b[0];
-	r[4] = b[1];
-	r[5] = b[2];
-
-	r[6] = c[0];
-	r[7] = c[1];
-	r[8] = c[2];
-}
-
-inline Matrix3::Matrix3(double a00, double a01, double a02, double a10, double a11, double a12, double a20, double a21, double a22)
-{
-	r[0] = a00;
-	r[1] = a01;
-	r[2] = a02;
-
-	r[3] = a10;
-	r[4] = a11;
-	r[5] = a12;
-
-	r[6] = a20;
-	r[7] = a21;
-	r[8] = a22;
-}
-
-inline double Matrix3::Determinant() const
-{
-	return r[0] * r[4] * r[8] + r[1] * r[5] * r[6] + r[2] * r[3] * r[7] - r[2] * r[4] * r[6] - r[1] * r[3] * r[8] - r[0] * r[5] * r[7];
-}
-
-inline double& Matrix3::operator() (int i, int j)
-{
-	return r[i + j + j + j];
-}
-
-inline double Matrix3::operator() (int i, int j) const
-{
-	return r[i + j + j + j];
-}
-
-
-/* Matrix4 */
-struct Matrix4
-{
-public:
-	double r[16];
-
-	Matrix4();
-	Matrix4(const Matrix3& m3);
-	double& operator() (int, int);
-	double operator() (int, int) const;
-	double Determinant() const;
-};
-
-inline Matrix4::Matrix4()
-{
-	for (int i = 0; i < 16; i++)
-		r[i] = 0.0f;
-}
-
-/*!
-\brief Create an homogeneous matrix from a simple Matrix.
-The translation and shear coefficients are set to 0.0.
-\param a Matrix.
-*/
-inline Matrix4::Matrix4(const Matrix3& a)
-{
-	// Rotation and scale
-	r[0] = a.r[0];
-	r[1] = a.r[1];
-	r[2] = a.r[2];
-	r[4] = a.r[3];
-	r[5] = a.r[4];
-	r[6] = a.r[5];
-	r[8] = a.r[6];
-	r[9] = a.r[7];
-	r[10] = a.r[8];
-
-	// Translation
-	r[3] = r[7] = r[11] = 0.0;
-
-	// Shear
-	r[12] = r[13] = r[14] = 0.0;
-
-	// Scale
-	r[15] = 1.0;
-}
-
-inline double& Matrix4::operator() (int i, int j)
-{
-	return r[i + j + j + j];
-}
-
-inline double Matrix4::operator() (int i, int j) const
-{
-	return r[i + j + j + j];
-}
-
-inline double Matrix4::Determinant() const
-{
-	const Matrix4& M = *this;
-	return M(0, 0) * Matrix3(M(1, 1), M(1, 2), M(1, 3), M(2, 1), M(2, 2), M(2, 3), M(3, 1), M(3, 2), M(3, 3)).Determinant()
-		- M(1, 0) * Matrix3(M(0, 1), M(0, 2), M(0, 3), M(2, 1), M(2, 2), M(2, 3), M(3, 1), M(3, 2), M(3, 3)).Determinant()
-		+ M(2, 0) * Matrix3(M(0, 1), M(0, 2), M(0, 3), M(1, 1), M(1, 2), M(1, 3), M(3, 1), M(3, 2), M(3, 3)).Determinant()
-		- M(3, 0) * Matrix3(M(0, 1), M(0, 2), M(0, 3), M(1, 1), M(1, 2), M(1, 3), M(2, 1), M(2, 2), M(2, 3)).Determinant();
 }

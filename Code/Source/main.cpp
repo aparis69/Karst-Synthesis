@@ -4,8 +4,36 @@
 */
 
 #include "graph.h"
+#include <fstream>
 
-#include <chrono>
+static void BakePoissonDistributionFiles()
+{
+	{
+		std::vector<Vector3> pts;
+		Box2D(Vector2(0), 1000.0).ToBox(-200, 50).Poisson(pts, 15.0, 1000000);
+		std::cout << pts.size() << std::endl;
+
+		std::ofstream fout("data3d.dat", std::ios::out | std::ios::binary);
+		size_t size = pts.size();
+		fout.write((char*)&size, sizeof(size));
+		fout.write((char*)&pts[0], size * sizeof(Vector3));
+		fout.close();
+	}
+
+	{
+		std::vector<Vector2> pts;
+		Box2D(Vector2(0), 1000.0).Poisson(pts, 15.0, 1000000);
+		std::cout << pts.size() << std::endl;
+
+		std::ofstream fout("data2d.dat", std::ios::out | std::ios::binary);
+		size_t size = pts.size();
+		fout.write((char*)&size, sizeof(size));
+		fout.write((char*)&pts[0], size * sizeof(Vector2));
+		fout.close();
+	}
+
+	std::cin.get();
+}
 
 static void GorgeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
 {
@@ -21,6 +49,30 @@ static void GorgeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& pa
 	params.distanceCost = CostTerm(true, 1.0);
 	params.horizonCost = CostTerm(false, 0.0);
 	params.permeabilityCost = CostTerm(false, 0.0);
+	params.fractureCost = CostTerm(false, 0.0);
+	params.gamma = 2.0;
+
+	params.graphNeighbourCount = 32;
+	params.graphNeighbourRadius = 100.0;
+	params.graphPoissonRadius = 10.0;
+}
+
+static void GorgePermeability(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
+{
+	keyPts.push_back(KeyPoint(Vector3(-213.311, 36.3838, 329.722), KeyPointType::Sink));
+	keyPts.push_back(KeyPoint(Vector3(146.786, 39.7847, -284.607), KeyPointType::Spring));
+
+	params.sceneName = "permeability";
+
+	params.heightfield = ScalarField2D(256, 256, Box2D(Vector2(0), 750.0), 0.0);
+	params.elevationOffsetMin = 200.0;
+	params.elevationOffsetMax = 50.0;
+
+	params.permeabilityVols.push_back(PermeabilitySphere(Vector3(96.8492, 0.0, 126.804), 100.0, -1000.0));
+
+	params.distanceCost = CostTerm(true, 1.0);
+	params.horizonCost = CostTerm(false, 0.0);
+	params.permeabilityCost = CostTerm(true, 1.0);
 	params.fractureCost = CostTerm(false, 0.0);
 	params.gamma = 2.0;
 
@@ -82,7 +134,7 @@ static void SpongeworkNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameter
 
 	std::vector<Vector3> waypoints;
 	Box2D(Vector2(0), 200.0).ToBox(-200.0, 0.0).Poisson(waypoints, 15.0, 50);
-	for (auto p : waypoints)
+	for (const auto& p : waypoints)
 		keyPts.push_back(KeyPoint(p, Random::Uniform() > 0.65 ? KeyPointType::Waypoint : KeyPointType::Deadend));
 
 	params.sceneName = "spongework";
@@ -99,7 +151,7 @@ static void SpongeworkNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameter
 
 	params.graphNeighbourCount = 32;
 	params.graphNeighbourRadius = 100.0;
-	params.graphPoissonRadius = 8.0;
+	params.graphPoissonRadius = 10.0;
 }
 
 static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalParameters& params)
@@ -154,7 +206,7 @@ static void RectilinearMazeNetwork(std::vector<KeyPoint>& keyPts, GeologicalPara
 
 	params.graphNeighbourCount = 32;
 	params.graphNeighbourRadius = 100.0;
-	params.graphPoissonRadius = 15.0;
+	params.graphPoissonRadius = 10.0;
 }
 
 
@@ -166,29 +218,31 @@ void ComputeAndSaveSkeleton(GeologicalParameters params, std::vector<KeyPoint>& 
 {
 	// Compute 3D cost graph
 	MyChrono chrono;
-	VolumetricGraph graph;
-	graph.InitializeCostGraph(keyPts, params);
+		VolumetricGraph graph;
+		graph.InitializeCostGraph(keyPts, params);
 	timeInit += chrono.ElapsedMs();
 
 	// Compute karstic skeleton
 	chrono.Restart();
-	KarsticSkeleton skel = graph.ComputeKarsticSkeleton(keyPts);
+		KarsticSkeleton skel = graph.ComputeKarsticSkeleton(keyPts);
 	timeSkel += chrono.ElapsedMs();
 
 	// Procedural amplification
 	chrono.Restart();
-	skel.Amplify(&graph, params.additionalKeyPts);
+		skel.Amplify(&graph, params.additionalKeyPts);
 	timeAmpl += chrono.ElapsedMs();
 
 	// Save
-	skel.Save(params.sceneName);
+	skel.SaveDAT(params.sceneName);
+	skel.SaveObj(params.sceneName);
 }
 
 int main()
 {
 	srand(1234);
 
-	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	//BakePoissonDistributionFiles();
+	VolumetricGraph::LoadPoissonSampleFile();
 
 	{
 		GeologicalParameters params;
@@ -196,6 +250,15 @@ int main()
 		GorgeNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene gorge -- ok" << std::endl;
+
+	{
+		GeologicalParameters params;
+		std::vector<KeyPoint> keyPts;
+		GorgePermeability(keyPts, params);
+		ComputeAndSaveSkeleton(params, keyPts);
+	}
+	std::cout << "Scene permeability -- ok" << std::endl;
 
 	{
 		GeologicalParameters params;
@@ -203,6 +266,7 @@ int main()
 		SuperimposedNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene superimposed -- ok" << std::endl;
 
 	{
 		GeologicalParameters params;
@@ -210,6 +274,7 @@ int main()
 		SpongeworkNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene spongework -- ok" << std::endl;
 
 	{
 		GeologicalParameters params;
@@ -217,13 +282,14 @@ int main()
 		RectilinearMazeNetwork(keyPts, params);
 		ComputeAndSaveSkeleton(params, keyPts);
 	}
+	std::cout << "Scene rectilinear maze -- ok" << std::endl;
 
 	std::cout << std::endl;
 	std::cout << "--------------------" << std::endl;
-	std::cout << "Time init: " << timeInit << "ms" << std::endl;
-	std::cout << "Time skeleton: " << timeSkel << "ms" << std::endl;
-	std::cout << "Time amplification: " << timeAmpl << "ms" << std::endl;
-	std::cin.get();
+	std::cout << "Total Time init: " << timeInit << "ms" << std::endl;
+	std::cout << "Total Time skeleton computation: " << timeSkel << "ms" << std::endl;
+	std::cout << "Total Time amplification: " << timeAmpl << "ms" << std::endl;
+	//std::cin.get();
 
 	return 0;
 }
