@@ -5,7 +5,10 @@
      style="float: left; margin: 5px;" />
 	 
 Source code for our paper "Synthesizing Geologically Coherent Cave Networks" published in Computer Graphics Forum in 2021 and presented at Pacific Graphics 2021. This is aimed at researchers, students or profesionnals who may want to reproduce **some** of the results described in the paper.
-[Click here for more information about the project](https://aparis69.github.io/public_html/projects/paris2021_Karsts.html).
+
+[Project page](https://aparis69.github.io/public_html/projects/paris2021_Karsts.html)
+
+[Paper](https://hal.archives-ouvertes.fr/hal-03331697/file/2021-caves-author.pdf)
 
 ### Important notes
 * This code is **not** the one which produced the scenes seen in the paper. Everything has been *recoded* on my side to make sure it is free to use. Hence, the results as well as the timings may differ from the ones in the paper.
@@ -14,6 +17,7 @@ Source code for our paper "Synthesizing Geologically Coherent Cave Networks" pub
 ### Testing
 There is no dependency. Running the program will output 3 karstic skeletons stored in ASCII files. Each scene consists of 2 files: a node file and a link file. The format is easy to undertand.
 Tests have been made on:
+* Visual Studio 2017: double click on the solution in ./VS2017/ and Ctrl + F5 to run
 * Visual Studio 2019: double click on the solution in ./VS2019/ and Ctrl + F5 to run
 * Ubuntu 16.04: cd ./G++/ && make && ./Out/KarstSynthesis
 
