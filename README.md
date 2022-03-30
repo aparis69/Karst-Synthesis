@@ -15,10 +15,10 @@ Source code for our paper "Synthesizing Geologically Coherent Cave Networks" pub
 * This is **research** code provided without any warranty. However, if you have any problem you can still send me an email or create an issue.
 
 ### Testing
-There is no dependency. Running the program will output 3 karstic skeletons stored in ASCII files. Each scene consists of 2 files: a node file and a link file. The format is easy to undertand.
-Tests have been made on:
+There is no dependency. Running the program will output 5 karstic skeletons stored in two formats: an obj file representing the skeleton mesh, and a pair of ASCII files storing the graph skeleton data. Tests have been made on:
 * Visual Studio 2017: double click on the solution in ./VS2017/ and Ctrl + F5 to run
 * Visual Studio 2019: double click on the solution in ./VS2019/ and Ctrl + F5 to run
+* Visual Studio 2022: double click on the solution in ./VS2019/ and Ctrl + F5 to run
 * Ubuntu 16.04: cd ./G++/ && make && ./Out/KarstSynthesis
 
 In you can't compile or run the code, results produced with this code are available in the Results/ folder.
