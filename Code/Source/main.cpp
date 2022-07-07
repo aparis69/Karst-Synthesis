@@ -289,7 +289,7 @@ int main()
 	std::cout << "Total Time init: " << timeInit << "ms" << std::endl;
 	std::cout << "Total Time skeleton computation: " << timeSkel << "ms" << std::endl;
 	std::cout << "Total Time amplification: " << timeAmpl << "ms" << std::endl;
-	//std::cin.get();
+	std::cin.get();
 
 	return 0;
 }

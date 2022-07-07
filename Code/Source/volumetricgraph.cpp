@@ -62,7 +62,7 @@ double VolumetricGraph::ComputeEdgeCost(const Vector3& p, const Vector3& pn) con
 
 	// Inside/outside
 	{
-		bool is_out = (params.heightfield.GetValueBilinear(Vector2(p.x, p.z)) > p.y);
+		bool is_out = (params.heightfield.GetValueBilinear(Vector2(p.x, p.z)) < p.y);
 		cost += is_out ? 100000.0 : 0;
 	}
 
